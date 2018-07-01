@@ -16,8 +16,8 @@
 # limitations under the License.
 # =============================================================================
 
-"""Local ProjectQ Backends."""
+"""Local JKU Backend."""
 
-from .qasm_simulator_projectq import QasmSimulatorProjectQ
+from .qasm_simulator_jku import QasmSimulatorJKU
 
 __version__ = '0.1.0'
