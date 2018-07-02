@@ -17,8 +17,8 @@
 
 # =============================================================================
 
-from test.python._random_circuit_generator import RandomCircuitGenerator
-from test.python.common import QiskitTestCase
+from test_utils._random_circuit_generator import RandomCircuitGenerator
+from test_utils.common import QiskitTestCase
 
 import random
 import unittest
@@ -43,10 +43,10 @@ else:
     _skip_class = False
 
 
-@unittest.skipIf(_skip_class, 'Project Q C++ simulator unavailable')
+@unittest.skipIf(_skip_class, 'JKU C++ simulator unavailable')
 class TestQasmSimulatorJKU(QiskitTestCase):
     """
-    Test projectq simulator.
+    Test JKU simulator.
     """
 
     @classmethod
@@ -128,7 +128,7 @@ class TestQasmSimulatorJKU(QiskitTestCase):
             result_qk = qk_simulator.run(job_qk).result()
             counts_pq = result_pq.get_counts(result_pq.get_names()[0])
             counts_qk = result_qk.get_counts(result_qk.get_names()[0])
-            self.log.info('local_qasm_simulator_projectq: %s', str(counts_pq))
+            self.log.info('local_qasm_simulator_jku: %s', str(counts_pq))
             self.log.info('local_qasm_simulator: %s', str(counts_qk))
             states = counts_qk.keys() | counts_pq.keys()
             # contingency table

@@ -62,19 +62,27 @@ class JKUSimulatorWrapper:
     def convert_operation_to_line(self, op, qubit_names):
         pi = str(np.pi)
         half_pi = str(np.pi / 2)
-        gate_names = {'U': 'U', 'h': 'U', 'cx': 'CX', 'x': 'U', 'y': 'U', 'z': 'U', 's': 'U'}
-        gate_params = {'U': op.get('params'),
+        gate_names = {'u': 'U', 
+                      'u1': 'U', 'u2': 'U', 'u3': 'U',
+                      'h': 'U', 'cx': 'CX', 'x': 'U',
+                      'y': 'U', 'z': 'U', 's': 'U'}
+        params = op['params'] + [0]*(3-len(op['params'])) if 'params' in op else [0,0,0]
+        gate_params = {'u': [params[0], params[1], params[2]],
+                       'u1': [0, 0, params[0]],
+                       'u2': [half_pi, params[0], params[1]],
+                       'u3': [params[0], params[1], params[2]],
                        'h': [half_pi, '0', pi], 
                        'x': [pi, '0', pi], 
                        'y': [pi, half_pi, half_pi], 
                        'z': ['0', '0', pi], 
                        's': ['0', '0', half_pi]
                        }
-        gate_name = op.get('name')
+        if not 'name' in op:
+            return ""
+        gate_name = op['name'].lower()
         if not gate_name in gate_names:
             #should be error
-            warnings.warn("Warning: gate {} is currently not supported by JKU and will be ignored".format(op["name"]))
-            return ""
+            raise RuntimeError("Error: gate {} is currently not supported by JKU".format(op["name"]))
         new_gate_name = gate_names[gate_name]
         if new_gate_name == 'U':
             new_gate_name = "U({},{},{})".format(*gate_params[gate_name])
