@@ -55,6 +55,7 @@ class JKUSimulatorWrapper:
         
     def run(self, filename):        
         cmd = [self.EXEC, '--simulate_qasm', filename, '--seed', str(self.seed)]
+        print(" ".join(cmd))
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode() #TODO: improve, use pipes as in qasm
         return output
             
@@ -62,22 +63,23 @@ class JKUSimulatorWrapper:
         pi = str(np.pi)
         half_pi = str(np.pi / 2)
         gate_names = {'U': 'U', 'h': 'U', 'cx': 'CX', 'x': 'U', 'y': 'U', 'z': 'U', 's': 'U'}
-        gate_params = {'U': op['params'], 
+        gate_params = {'U': op.get('params'),
                        'h': [half_pi, '0', pi], 
                        'x': [pi, '0', pi], 
                        'y': [pi, half_pi, half_pi], 
                        'z': ['0', '0', pi], 
                        's': ['0', '0', half_pi]
                        }
-        if not op["name"] in gate_names:
+        gate_name = op.get('name')
+        if not gate_name in gate_names:
             #should be error
             warnings.warn("Warning: gate {} is currently not supported by JKU and will be ignored".format(op["name"]))
             return ""
-        gate_name = gate_names[op["name"]]
-        if gate_name == 'U':
-            gate_name = "U({},{},{})".format(*gate_params[op["name"]])
-        gate_inputs = ", ".join([qubit_names[i] for i in op["qubits"]])
-        return "{} {};".format(gate_name, gate_inputs)
+        new_gate_name = gate_names[gate_name]
+        if new_gate_name == 'U':
+            new_gate_name = "U({},{},{})".format(*gate_params[gate_name])
+        new_gate_inputs = ", ".join([qubit_names[i] for i in op["qubits"]])
+        return "{} {};".format(new_gate_name, new_gate_inputs)
 
     def convert_qobj_circuit_to_jku_qasm(self, qobj_circuit):
         circuit = qobj_circuit['compiled_circuit']
