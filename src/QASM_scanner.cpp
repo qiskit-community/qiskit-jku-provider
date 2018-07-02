@@ -30,6 +30,12 @@ QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
         keywords["pi"] = Token::Kind::pi;
         keywords["OPENQASM"] = Token::Kind::openqasm;
         keywords["show_probabilities"] = Token::Kind::probabilities;
+        keywords["sin"] = Token::Kind::sin;
+        keywords["cos"] = Token::Kind::cos;
+        keywords["tan"] = Token::Kind::tan;
+        keywords["exp"] = Token::Kind::exp;
+        keywords["ln"] = Token::Kind::ln;
+        keywords["sqrt"] = Token::Kind::sqrt;
         keywords["measure_all"] = Token::Kind::measureall;
         line = 1;
         col = 0;
@@ -135,6 +141,8 @@ Token QASM_scanner::next() {
         case '+': nextCh(); t.kind = Token::Kind::plus; break;
         case '-': nextCh(); t.kind = Token::Kind::minus; break;
         case '*': nextCh(); t.kind = Token::Kind::times; break;
+        case '/': nextCh(); t.kind = Token::Kind::div; break;
+        case '^': nextCh(); t.kind = Token::Kind::power; break;
         default:
             std::cerr << "ERROR: UNEXPECTED CHARACTER: '" << ch << "'! " << std::endl;
             nextCh();

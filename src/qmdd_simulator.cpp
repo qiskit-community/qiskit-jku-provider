@@ -449,17 +449,99 @@ int QASMargument() {
 
 QMDD_matrix tmp_matrix;
 
-mpreal QASMexp() {
+set<Token::Kind> unaryops {Token::Kind::sin,Token::Kind::cos,Token::Kind::tan,Token::Kind::exp,Token::Kind::ln,Token::Kind::sqrt};
+
+
+mpreal QASMexp();
+
+mpreal QASMexponentiation() {
+	mpreal x;
+
 	if(sym == Token::Kind::real) {
 		scan();
 		return mpreal(t.val_real);
 	} else if(sym == Token::Kind::nninteger) {
 		scan();
 		return mpreal(t.val);
-	} else if(sym == Token::Kind::pi) {
+	} else if(sym == Token::Kind::lpar) {
 		scan();
-		return 2 * acos(mpreal(0));
+		x = QASMexp();
+		check(Token::Kind::rpar);
+		return x;
+	} else if(unaryops.find(sym) != unaryops.end()) {
+		Token::Kind op = sym;
+		scan();
+		check(Token::Kind::lpar);
+		x = QASMexp();
+		check(Token::Kind::rpar);
+		if(op == Token::Kind::sin) {
+			return sin(x);
+		} else if(op == Token::Kind::cos) {
+			return cos(x);
+		} else if(op == Token::Kind::tan) {
+			return tan(x);
+		} else if(op == Token::Kind::exp) {
+			return exp(x);
+		} else if(op == Token::Kind::ln) {
+			return log(x);
+		} else if(op == Token::Kind::sqrt) {
+			return sqrt(x);
+		}
+	} else {
+		std::cerr << "Invalid Expression" << endl;
 	}
+	return 0;
+}
+
+mpreal QASMfactor() {
+	mpreal x,y;
+	x = QASMexponentiation();
+	while (sym == Token::Kind::power) {
+		scan();
+		y = QASMexponentiation();
+		x = pow(x, y);
+	}
+	return x;
+}
+
+mpreal QASMterm() {
+	mpreal x,y;
+	x = QASMfactor();
+
+	while(sym == Token::Kind::times || sym == Token::Kind::div) {
+		Token::Kind op = sym;
+		scan();
+		y = QASMfactor();
+		if(op == Token::Kind::times) {
+			x *= y;
+		} else {
+			x /= y;
+		}
+	}
+	return x;
+}
+
+
+mpreal QASMexp() {
+	mpreal x;
+	if(sym == Token::Kind::minus) {
+		scan();
+		x = -QASMterm();
+	} else {
+		x = QASMterm();
+	}
+
+	while(sym == Token::Kind::plus || sym == Token::Kind::minus) {
+		Token::Kind op = sym;
+		scan();
+		mpreal y = QASMterm();
+		if(op == Token::Kind::plus) {
+			x += y;
+		} else {
+			x -= y;
+		}
+	}
+	return x;
 }
 
 QMDDedge gateQASM() {
