@@ -3,7 +3,10 @@
  * the scanner for the parser. They hold additional information about the
  * symbol.
  */
- class Token {
+#ifndef TOKEN_H_
+#define TOKEN_H_
+
+class Token {
  public:
 	enum class Kind {none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, measureall, sin, cos, tan, exp, ln, sqrt, div, power};
 
@@ -38,3 +41,5 @@
 	}
 
  };
+
+#endif /* TOKEN_H_ */

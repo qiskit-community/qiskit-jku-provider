@@ -9,6 +9,11 @@
  * The Scanner for the MicroJava Compiler.
  */
 
+#include <QMDDcore.h>
+#include <QMDDpackage.h>
+#include <QMDDcomplex.h>
+
+
 #include <iostream>     // std::cout
 #include <fstream>      // std::ifstream
 #include <istream>
