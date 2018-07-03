@@ -48,17 +48,19 @@ def choose_weighted_random(elements_dict):
             return e
     return None    
     
+#this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
     def __init__(self, exe = None):
         self.seed = 0
         self.EXEC = exe
         
+    #performs the actual external call to the JKU exe
     def run(self, filename):        
         cmd = [self.EXEC, '--simulate_qasm', filename, '--seed', str(self.seed)]
-        print(" ".join(cmd))
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode() #TODO: improve, use pipes as in qasm
         return output
-            
+       
+    #convert one operation from the qobj file to a QASM line in the format JKU can handle
     def convert_operation_to_line(self, op, qubit_names):
         pi = str(np.pi)
         half_pi = str(np.pi / 2)
@@ -89,6 +91,7 @@ class JKUSimulatorWrapper:
         new_gate_inputs = ", ".join([qubit_names[i] for i in op["qubits"]])
         return "{} {};".format(new_gate_name, new_gate_inputs)
 
+    #converts the full qobj circuit (except measurements) to a QASM file JKU can handle
     def convert_qobj_circuit_to_jku_qasm(self, qobj_circuit):
         circuit = qobj_circuit['compiled_circuit']
         qubit_num = circuit['header']['number_of_qubits']
@@ -105,11 +108,13 @@ class JKUSimulatorWrapper:
         qasm_content = "\n".join(qasm_file_lines)
         return qasm_content
        
+    #convert the qobj circuit to QASM and save as temp file
     def save_circuit_file(self, filename, qobj_circuit):
         qasm = self.convert_qobj_circuit_to_jku_qasm(qobj_circuit)
         with open(filename, "w") as qasm_file:
             qasm_file.write(qasm)
 
+    #runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_on_qobj_circuit(self, qobj_circuit):
         measurement_data = self.compute_measurement_data(qobj_circuit) #do this before running so we can output warning to the user as soon as possible if needed
         filename = "temp.qasm" #TODO: better name
@@ -123,24 +128,40 @@ class JKUSimulatorWrapper:
             result_dict['name'] = qobj_circuit['name']
         return result_dict
     
+    #parsing the textual JKU output
     def parse_output(self, output, measurement_data):
         #JKU doesn't support shots yet. So our current support is based on getting probabilities and sampling by hand
-        probs = dict(filter(lambda x_p: x_p[1] > 0,
+        #JKU output is of the form "|0010>: 0.4" for the probabilities, so we grab that with a regexp
+        probs = dict(filter(lambda x_p: x_p[1] > 0, 
                 map(lambda x_p: (x_p[0], float(x_p[1])), 
                 re.findall('\|(\d+)>: (\d+\.?\d*)', output))))
-                
+        
+        #generating the "shots" by randomally sampling the distribution we got from the actual output
         sample = self.sample_from_probs(probs, self.shots)
         result = {}
         
         result['counts'] = dict(map(lambda x_count: (self.qubits_to_clbits(x_count[0], measurement_data)[::-1], x_count[1]) , sample.items()))
         return result
     
+    #converting the actual measurement results for all qubits to the clbits that the user expects to see
     def qubits_to_clbits(self, qubits, measurement_data):
-        clbits = list('0'*len(qubits))
-        for (qubit, clbit) in measurement_data.items():
+        clbits = list('0'*measurement_data['clbits_num'])
+        for (qubit, clbit) in measurement_data['mapping'].items():
             clbits[clbit] = qubits[qubit]
-        return "".join(clbits)
+        s = "".join(clbits)
+        #QISKit expects clbits for different registers to be space-separated, i.e. '01 100'
+        clbits_lengths = [x[1] for x in measurement_data['clbits']]
+        return " ".join(self.slice_by_lengths(s, clbits_lengths))
         
+    def slice_by_lengths(self, arr, lengths):
+        i = 0
+        res = []
+        for s in lengths:
+            res.append(arr[i:i+s])
+            i = i + s
+        return res
+    
+    #given a distribution <probs>, draw <shots> random elements from it
     def sample_from_probs(self, probs, shots):
         result = {}
         for shot in range(shots):
@@ -152,10 +173,11 @@ class JKUSimulatorWrapper:
             result[res] += 1
         return result        
     
+    #finding the data relevant to measurements and clbits in the qobj_circuit
     def compute_measurement_data(self, qobj_circuit):
         #Ignore (and inform the user) any in-circuit measurements
         #Create a mapping of qubit --> classical bit for any end-circuit measurement
-        measurement_data = {} #qubit --> clbit
+        measurement_data = {'mapping': {}, 'clbits': qobj_circuit['compiled_circuit']['header']['clbit_labels'], 'clbits_num': qobj_circuit['compiled_circuit']['header']['number_of_clbits']} #mapping is qubit --> clbit
         ops = qobj_circuit['compiled_circuit']['operations'][::-1] #reverse order
         found_non_measure_gate = False
         found_mid_circuit_measurement = False
@@ -165,7 +187,7 @@ class JKUSimulatorWrapper:
                     found_mid_circuit_measurement = True
                     #we should skip this measurement, but right now QISKit optimizes circuits by pushing measurements from the end backward, so we can't ignore this either
                     #continue
-                measurement_data[op['qubits'][0]] = op['clbits'][0]
+                measurement_data['mapping'][op['qubits'][0]] = op['clbits'][0]
             else:
                 found_non_measure_gate = True
         #this warning is meaningless as long as QISKit pushed measurement gates backwards
@@ -223,18 +245,6 @@ class QasmSimulatorJKU(BaseBackend):
             raise FileNotFoundError('Simulator executable not found (using %s)' %
                                     self._configuration.get('exe', 'default locations'))
         
-        #logger.info('JKU C++ simulator unavailable.')
-        #raise ImportError('JKU C++ simulator unavailable.')
-
-        # Define the attributes inside __init__.
-        #self._number_of_qubits = 0
-        #self._number_of_clbits = 0
-        #self._statevector = 0
-        #self._classical_state = 0
-        #self._seed = None
-        #self._shots = 0
-        #self._sim = None
-
     def run(self, q_job):
         return LocalJob(self._run_job, q_job)
 
