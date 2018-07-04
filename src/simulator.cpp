@@ -99,7 +99,7 @@ mpreal Simulator::AssignProbs(QMDDedge& e) {
 	if(QMDDterminal(e)) {
 		sum = mpreal(1);
 	} else {
-		sum = AssignProbs(e.p->e[0]) + AssignProbs(e.p->e[1]) + AssignProbs(e.p->e[2]) + AssignProbs(e.p->e[3]);
+		sum = AssignProbs(e.p->e[0]) + AssignProbs(e.p->e[2]); //+ AssignProbs(e.p->e[1]) + AssignProbs(e.p->e[3]);
 	}
 
 	probs.insert(std::pair<QMDDnodeptr, mpreal>(e.p, sum));
@@ -110,28 +110,21 @@ mpreal Simulator::AssignProbs(QMDDedge& e) {
 }
 
 void Simulator::MeasureAll(bool reset_state) {
-	QMDDedge e;
-
 	std::unordered_map<QMDDnodeptr, mpreal>::iterator it;
 	std::unordered_map<uint64_t, mpreal>::iterator it2;
 
 	probs.clear();
-	e = circ.e;
 
 	mpreal p,p0,p1,tmp,w;
-	p = AssignProbs(e);
+	p = AssignProbs(circ.e);
 
 	if(abs(p -1) > epsilon) {
 		std::cerr << "Numerical error occurred during simulation: |alpha0|^2 + |alpha1|^2 = " << p<< ", but should be 1!"<<std::endl;
 		exit(1);
 	}
-	QMDDedge cur = e;
-	QMDDedge edges[4];
-	QMDDedge prev = QMDDone;
-	int prev_index = 0;
-	for(int i = QMDDinvorder[e.p->v]; i >= 0;--i) {
+	QMDDedge cur = circ.e;
+	for(int i = QMDDinvorder[circ.e.p->v]; i >= 0;--i) {
 
-		//std::cout << "  -- measure qubit " << circ.line[cur.p->v].variable << ": " << std::flush;
 		it = probs.find(cur.p->e[0].p);
 		it2 = Cmag.find(cur.p->e[0].w & 0x7FFFFFFF7FFFFFFFull);
 		p0 = it->second * it2->second * it2->second;
@@ -148,91 +141,18 @@ void Simulator::MeasureAll(bool reset_state) {
 
 		it2 = Cmag.find(cur.w & 0x7FFFFFFF7FFFFFFFull);
 
-		mpreal tmp = it2->second * it2->second;
-		p0 *= tmp;
-		p1 *= tmp;
+		mpreal tmp = p0 + p1;
+		p0 /= tmp;
+		p1 /= tmp;
 
-		if(abs(p0+p1-1) > epsilon) {
-			std::cerr << "Numerical error occurred during simulation: |alpha0|^2 + |alpha1|^2 = " << p0+p1 << ", but should be 1!"<< std::endl;
-			exit(1);
-		}
-
-		//std::cout << "p0 = " << p0 << ", p1 = " << p1 << std::flush;
 		mpreal n = mpreal(rand()) / RAND_MAX;
 
 		if(n < p0) {
-			//std::cout << " -> measure 0" << std::endl;
 			measurements[cur.p->v] = 0;
-			edges[0]=cur.p->e[0];
-			edges[1]=cur.p->e[1];
-			edges[2]=edges[3]=QMDDzero;
-
-			if(i == QMDDinvorder[e.p->v]) {
-				it2 = Cmag.find(e.w & 0x7FFFFFFF7FFFFFFFull);
-				w = it2->second;
-				e = QMDDmakeNonterminal(cur.p->v, edges);
-				it2 = Cmag.find(e.w & 0x7FFFFFFF7FFFFFFFull);
-				w *= it2->second;
-				e.w = 0x100000000ull;
-				cur = e;
-			} else {
-				it2 = Cmag.find(cur.w & 0x7FFFFFFF7FFFFFFFull);
-				w = it2->second;
-				cur = QMDDmakeNonterminal(cur.p->v, edges);
-				it2 = Cmag.find(cur.w & 0x7FFFFFFF7FFFFFFFull);
-				w *= it2->second;
-				cur.w = 0x100000000ull;
-				prev.p->e[prev_index] = cur;
-			}
-
-			if(cur.p->e[0].w != 0x0ull) {
-				prev_index = 0;
-			} else {
-				prev_index = 1;
-			}
-			prev=cur;
-			cur = prev.p->e[prev_index];
-			p0 = w / sqrt(p0);
-			mpreal zero = mpreal(0);
-			uint64_t a = Cmake(p0,zero);
-
-			cur.w = Cmul(cur.w, a);
+			cur = cur.p->e[0];
 		} else {
-			//std::cout << " -> measure 1" << std::endl;
 			measurements[cur.p->v] = 1;
-			edges[2]=cur.p->e[2];
-			edges[3]=cur.p->e[3];
-			edges[0]=edges[1]=QMDDzero;
-
-			if(i == QMDDinvorder[e.p->v]) {
-				it2 = Cmag.find(e.w & 0x7FFFFFFF7FFFFFFFull);
-				w = it2->second;
-				e = QMDDmakeNonterminal(cur.p->v, edges);
-				it2 = Cmag.find(e.w & 0x7FFFFFFF7FFFFFFFull);
-				w *= it2->second;
-				e.w = 0x100000000ull;
-				cur = e;
-			} else {
-				it2 = Cmag.find(cur.w & 0x7FFFFFFF7FFFFFFFull);
-				w = it2->second;
-				cur = QMDDmakeNonterminal(cur.p->v, edges);
-				it2 = Cmag.find(cur.w & 0x7FFFFFFF7FFFFFFFull);
-				w *= it2->second;
-				cur.w = 0x100000000ull;
-				prev.p->e[prev_index] = cur;
-			}
-
-			if(cur.p->e[2].w != 0x0ull) {
-				prev_index = 2;
-			} else {
-				prev_index = 3;
-			}
-
-			prev=cur;
-			cur = prev.p->e[prev_index];
-
-			p1 = w / sqrt(p1);
-			cur.w = Cmul(cur.w, Cmake(p1, mpreal(0)));
+			cur = cur.p->e[2];
 		}
 	}
 
@@ -258,8 +178,6 @@ void Simulator::MeasureAll(bool reset_state) {
 		QMDDgarbageCollect();
 		cleanCtable(std::vector<QMDDedge>());
 	}
-
-	//std::cout << std::endl;
 }
 
 int Simulator::MeasureOne(int index) {
