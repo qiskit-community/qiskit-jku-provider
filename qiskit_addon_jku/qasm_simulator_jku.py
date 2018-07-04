@@ -68,6 +68,7 @@ class JKUSimulatorWrapper:
                       'u1': 'U', 'u2': 'U', 'u3': 'U',
                       'h': 'U', 'cx': 'CX', 'x': 'U',
                       'y': 'U', 'z': 'U', 's': 'U'}
+        gates_to_skip = ['barrier']
         params = op['params'] + [0]*(3-len(op['params'])) if 'params' in op else [0,0,0]
         gate_params = {'u': [params[0], params[1], params[2]],
                        'u1': [0, 0, params[0]],
@@ -79,11 +80,10 @@ class JKUSimulatorWrapper:
                        'z': ['0', '0', pi], 
                        's': ['0', '0', half_pi]
                        }
-        if not 'name' in op:
-            return ""
         gate_name = op['name'].lower()
+        if gate_name in gates_to_skip:
+            return ""
         if not gate_name in gate_names:
-            #should be error
             raise RuntimeError("Error: gate {} is currently not supported by JKU".format(op["name"]))
         new_gate_name = gate_names[gate_name]
         if new_gate_name == 'U':
@@ -135,12 +135,16 @@ class JKUSimulatorWrapper:
         probs = dict(filter(lambda x_p: x_p[1] > 0, 
                 map(lambda x_p: (x_p[0], float(x_p[1])), 
                 re.findall('\|(\d+)>: (\d+\.?\d*)', output))))
+        result = {}
+        result['counts'] = self.simulate_shots(probs, self.shots, measurement_data)
+        return result
         
-        #generating the "shots" by randomally sampling the distribution we got from the actual output
+    def simulate_shots(self, probs, shots, measurement_data):
         sample = self.sample_from_probs(probs, self.shots)
         result = {}
-        
-        result['counts'] = dict(map(lambda x_count: (self.qubits_to_clbits(x_count[0], measurement_data)[::-1], x_count[1]) , sample.items()))
+        for qubits, count in sample.items():
+            clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
+            result[clbits] = result.get(clbits, 0) + count
         return result
     
     #converting the actual measurement results for all qubits to the clbits that the user expects to see
@@ -221,7 +225,7 @@ class QasmSimulatorJKU(BaseBackend):
         'local': True,
         'description': 'JKU C++ simulator',
         'coupling_map': 'all-to-all',
-        'basis_gates': 'h,s,t,cx,id',
+        "basis_gates": 'u0,u1,u2,u3,cx,x,y,z,h,s,t'
     }
 
     def __init__(self, configuration=None):
