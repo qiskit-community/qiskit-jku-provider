@@ -39,6 +39,8 @@ from qiskit.backends.local._simulatorerror import SimulatorError
 
 #for sampling shots from the result distribution
 #elements_dict should not contain zero-prob entries
+#if the elements probabilities sum to less than 1, the last entry is enlarged
+#if the elements probabilities sum to more than 1, anything above 1 is skipped
 def choose_weighted_random(elements_dict):
     r = random.random()
     total_prob = 0
@@ -46,7 +48,7 @@ def choose_weighted_random(elements_dict):
         total_prob += p
         if r <= total_prob:
             return e
-    return None    
+    return elements_dict.items()[-1]    
     
 #this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
@@ -116,30 +118,33 @@ class JKUSimulatorWrapper:
 
     #runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_on_qobj_circuit(self, qobj_circuit):
-        measurement_data = self.compute_measurement_data(qobj_circuit) #do this before running so we can output warning to the user as soon as possible if needed
+        #do this before running so we can output warning to the user as soon as possible if needed
+        measurement_data = self.compute_measurement_data(qobj_circuit) 
         filename = "temp.qasm" #TODO: better name
         self.save_circuit_file(filename, qobj_circuit)
         self.start_time = time.time()
         run_output = self.run(filename)
         self.end_time = time.time()
         result = self.parse_output(run_output, measurement_data)
-        result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time, 'seed': self.seed, 'shots': self.shots, 'data': {'counts': result['counts']}}
+        result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time, 
+                       'seed': self.seed, 'shots': self.shots, 
+                       'data': {'counts': result['counts']}}
         if 'name' in qobj_circuit:
             result_dict['name'] = qobj_circuit['name']
         return result_dict
     
     #parsing the textual JKU output
-    def parse_output(self, output, measurement_data):
+    def parse_output(self, run_output, measurement_data):
         #JKU doesn't support shots yet. So our current support is based on getting probabilities and sampling by hand
         #JKU output is of the form "|0010>: 0.4" for the probabilities, so we grab that with a regexp
         probs = dict(filter(lambda x_p: x_p[1] > 0, 
                 map(lambda x_p: (x_p[0], float(x_p[1])), 
-                re.findall('\|(\d+)>: (\d+\.?\d*)', output))))
+                re.findall('\|(\d+)>: (\d+\.?\d*e?-?\d*)', run_output))))
         result = {}
-        result['counts'] = self.simulate_shots(probs, self.shots, measurement_data)
+        result['counts'] = self.simulate_shots(probs, measurement_data)
         return result
         
-    def simulate_shots(self, probs, shots, measurement_data):
+    def simulate_shots(self, probs, measurement_data):
         sample = self.sample_from_probs(probs, self.shots)
         result = {}
         for qubits, count in sample.items():
