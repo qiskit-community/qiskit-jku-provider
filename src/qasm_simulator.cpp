@@ -41,34 +41,42 @@ void QasmSimulator::check(Token::Kind expected) {
 	}
 }
 
-int QasmSimulator::QASMargument() {
+std::pair<int, int> QasmSimulator::QASMargument() {
 	check(Token::Kind::identifier);
 	std::string s = t.str;
+	if(qregs.find(s) == qregs.end()) {
+		std::cerr << "Argument is not a qreg: " << s << std::endl;
+	}
+
 	if(sym == Token::Kind::lbrack) {
 		scan();
 		check(Token::Kind::nninteger);
 		int offset = t.val;
 		check(Token::Kind::rbrack);
-		return qregs[s].first+offset;
+		return std::make_pair(qregs[s].first+offset, 1);
 	}
-	if(qregs[s].second != 1) {
-		std::cerr << "Argument has to be a single qubit" << std::endl;
-	}
-	return qregs[s].first;
+	return std::make_pair(qregs[s].first, qregs[s].second);
 }
 
-mpreal QasmSimulator::QASMexponentiation() {
-	mpreal x;
+QasmSimulator::Expr* QasmSimulator::QASMexponentiation() {
+	Expr* x;
 
 	if(sym == Token::Kind::real) {
 		scan();
-		return mpreal(t.val_real);
+		return new Expr(Expr::Kind::number, NULL, NULL, t.val_real, "");
+		//return mpreal(t.val_real);
 	} else if(sym == Token::Kind::nninteger) {
 		scan();
-		return mpreal(t.val);
+		return new Expr(Expr::Kind::number, NULL, NULL, t.val, "");
+		//return mpreal(t.val);
 	} else if(sym == Token::Kind::pi) {
 		scan();
-		return mpfr::const_pi();
+		return new Expr(Expr::Kind::number, NULL, NULL, mpfr::const_pi(), "");
+		//return mpfr::const_pi();
+	} else if(sym == Token::Kind::identifier) {
+		scan();
+		return new Expr(Expr::Kind::id, NULL, NULL, 0, t.str);
+		//return it->second;
 	} else if(sym == Token::Kind::lpar) {
 		scan();
 		x = QASMexp();
@@ -80,59 +88,96 @@ mpreal QasmSimulator::QASMexponentiation() {
 		check(Token::Kind::lpar);
 		x = QASMexp();
 		check(Token::Kind::rpar);
-		if(op == Token::Kind::sin) {
-			return sin(x);
-		} else if(op == Token::Kind::cos) {
-			return cos(x);
-		} else if(op == Token::Kind::tan) {
-			return tan(x);
-		} else if(op == Token::Kind::exp) {
-			return exp(x);
-		} else if(op == Token::Kind::ln) {
-			return log(x);
-		} else if(op == Token::Kind::sqrt) {
-			return sqrt(x);
+		if(x->kind == Expr::Kind::number) {
+			if(op == Token::Kind::sin) {
+				x->num = sin(x->num);
+			} else if(op == Token::Kind::cos) {
+				x->num = cos(x->num);
+			} else if(op == Token::Kind::tan) {
+				x->num = tan(x->num);
+			} else if(op == Token::Kind::exp) {
+				x->num = exp(x->num);
+			} else if(op == Token::Kind::ln) {
+				x->num = log(x->num);
+			} else if(op == Token::Kind::sqrt) {
+				x->num = sqrt(x->num);
+			}
+			return x;
+		} else {
+			if(op == Token::Kind::sin) {
+				return new Expr(Expr::Kind::sin, x, NULL, 0, "");
+			} else if(op == Token::Kind::cos) {
+				return new Expr(Expr::Kind::cos, x, NULL, 0, "");
+			} else if(op == Token::Kind::tan) {
+				return new Expr(Expr::Kind::tan, x, NULL, 0, "");
+			} else if(op == Token::Kind::exp) {
+				return new Expr(Expr::Kind::exp, x, NULL, 0, "");
+			} else if(op == Token::Kind::ln) {
+				return new Expr(Expr::Kind::ln, x, NULL, 0, "");
+			} else if(op == Token::Kind::sqrt) {
+				return new Expr(Expr::Kind::sqrt, x, NULL, 0, "");
+			}
 		}
 	} else {
 		std::cerr << "Invalid Expression" << std::endl;
 	}
-	return 0;
+	return NULL;
 }
 
-mpreal QasmSimulator::QASMfactor() {
-	mpreal x,y;
+QasmSimulator::Expr* QasmSimulator::QASMfactor() {
+	Expr* x;
+	Expr* y;
 	x = QASMexponentiation();
 	while (sym == Token::Kind::power) {
 		scan();
 		y = QASMexponentiation();
-		x = pow(x, y);
+		if(x->kind == Expr::Kind::number && y->kind == Expr::Kind::number) {
+			x->num = pow(x->num, y->num);
+			delete y;
+		} else {
+			x = new Expr(Expr::Kind::power, x, y, 0, "");
+		}
 	}
 
 	return x;
 }
 
-mpreal QasmSimulator::QASMterm() {
-	mpreal x = QASMfactor();
-	mpreal y;
+QasmSimulator::Expr* QasmSimulator::QASMterm() {
+	QasmSimulator::Expr* x = QASMfactor();
+	QasmSimulator::Expr* y;
 
 	while(sym == Token::Kind::times || sym == Token::Kind::div) {
 		Token::Kind op = sym;
 		scan();
 		y = QASMfactor();
 		if(op == Token::Kind::times) {
-			x *= y;
+			if(x->kind == Expr::Kind::number && y->kind == Expr::Kind::number) {
+				x->num = x->num * y->num;
+				delete y;
+			} else {
+				x = new Expr(Expr::Kind::times, x, y, 0, "");
+			}
 		} else {
-			x /= y;
+			if(x->kind == Expr::Kind::number && y->kind == Expr::Kind::number) {
+				x->num = x->num / y->num;
+				delete y;
+			} else {
+				x = new Expr(Expr::Kind::div, x, y, 0, "");
+			}
 		}
 	}
 	return x;
 }
 
-mpreal QasmSimulator::QASMexp() {
-	mpreal x;
+QasmSimulator::Expr* QasmSimulator::QASMexp() {
+	Expr* x;
+	Expr* y;
 	if(sym == Token::Kind::minus) {
 		scan();
-		x = -QASMterm();
+		x = QASMterm();
+		if(x->kind == Expr::Kind::number) {
+			x->num = -x->num;
+		}
 	} else {
 		x = QASMterm();
 	}
@@ -140,56 +185,203 @@ mpreal QasmSimulator::QASMexp() {
 	while(sym == Token::Kind::plus || sym == Token::Kind::minus) {
 		Token::Kind op = sym;
 		scan();
-		mpreal y = QASMterm();
+		y = QASMterm();
 		if(op == Token::Kind::plus) {
-			x += y;
+			if(x->kind == Expr::Kind::number && y->kind == Expr::Kind::number) {
+				x->num = x->num + y->num;
+				delete y;
+			} else {
+				x = new Expr(Expr::Kind::plus, x, y, 0, "");
+			}
 		} else {
-			x -= y;
+			if(x->kind == Expr::Kind::number && y->kind == Expr::Kind::number) {
+				x->num = x->num - y->num;
+				delete y;
+			} else {
+				x = new Expr(Expr::Kind::minus, x, y, 0, "");
+			}
 		}
 	}
 	return x;
 }
 
-QMDDedge QasmSimulator::gateQASM() {
+void QasmSimulator::QASMexpList(std::vector<Expr*>& expressions) {
+	Expr* x = QASMexp();
+	expressions.push_back(x);
+	while(sym == Token::Kind::comma) {
+		scan();
+		expressions.push_back(QASMexp());
+	}
+}
+
+void QasmSimulator::QASMargsList(std::vector<std::pair<int, int> >& arguments) {
+	arguments.push_back(QASMargument());
+	while(sym == Token::Kind::comma) {
+		scan();
+		arguments.push_back(QASMargument());
+	}
+}
+
+void QasmSimulator::QASMgate() {
 	if(sym == Token::Kind::ugate) {
 		scan();
 		check(Token::Kind::lpar);
-		mpreal theta = QASMexp();
+		Expr* theta = QASMexp();
 		check(Token::Kind::comma);
-		mpreal phi = QASMexp();
+		Expr* phi = QASMexp();
 		check(Token::Kind::comma);
-		mpreal lambda = QASMexp();
+		Expr* lambda = QASMexp();
 		check(Token::Kind::rpar);
-		int target = QASMargument();
+		std::pair<int, int> target = QASMargument();
 		check(Token::Kind::semicolon);
 
-		tmp_matrix[0][0] = Cmake(cos(-(phi+lambda)/2)*cos(theta/2), sin(-(phi+lambda)/2)*cos(theta/2));
-		tmp_matrix[0][1] = Cmake(-cos(-(phi-lambda)/2)*sin(theta/2), -sin(-(phi-lambda)/2)*sin(theta/2));
-		tmp_matrix[1][0] = Cmake(cos((phi-lambda)/2)*sin(theta/2), sin((phi-lambda)/2)*sin(theta/2));
-		tmp_matrix[1][1] = Cmake(cos((phi+lambda)/2)*cos(theta/2), sin((phi+lambda)/2)*cos(theta/2));
+		for(int i = 0; i < target.second; i++) {
+			tmp_matrix[0][0] = Cmake(cos(-(phi->num+lambda->num)/2)*cos(theta->num/2), sin(-(phi->num+lambda->num)/2)*cos(theta->num/2));
+			tmp_matrix[0][1] = Cmake(-cos(-(phi->num-lambda->num)/2)*sin(theta->num/2), -sin(-(phi->num-lambda->num)/2)*sin(theta->num/2));
+			tmp_matrix[1][0] = Cmake(cos((phi->num-lambda->num)/2)*sin(theta->num/2), sin((phi->num-lambda->num)/2)*sin(theta->num/2));
+			tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
 
-		line[nqubits-1-target] = 2;
-		QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
+			line[nqubits-1-(target.first+i)] = 2;
+			QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
+			line[nqubits-1-(target.first+i)] = -1;
 
-
-		line[nqubits-1-target] = -1;
-		return f;
+			ApplyGate(f);
+		}
+		delete theta;
+		delete phi;
+		delete lambda;
 	} else if(sym == Token::Kind::cxgate) {
 		scan();
-		int control = QASMargument();
+		std::pair<int, int> control = QASMargument();
 		check(Token::Kind::comma);
-		int target = QASMargument();
+		std::pair<int, int> target = QASMargument();
 		check(Token::Kind::semicolon);
-		line[nqubits-1-control] = 1;
-		line[nqubits-1-target] = 2;
-		QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-		line[nqubits-1-control] = -1;
-		line[nqubits-1-target] = -1;
-		return f;
+
+		if(control.second == target.second) {
+			for(int i = 0; i < target.second; i++) {
+				line[nqubits-1-(control.first+i)] = 1;
+				line[nqubits-1-(target.first+i)] = 2;
+				QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+				line[nqubits-1-(control.first+i)] = -1;
+				line[nqubits-1-(target.first+i)] = -1;
+				ApplyGate(f);
+			}
+		} else if(control.second == 1) {
+			for(int i = 0; i < target.second; i++) {
+				line[nqubits-1-control.first] = 1;
+				line[nqubits-1-(target.first+i)] = 2;
+				QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+				line[nqubits-1-control.first] = -1;
+				line[nqubits-1-(target.first+i)] = -1;
+				ApplyGate(f);
+			}
+		} else if(target.second == 1) {
+			for(int i = 0; i < target.second; i++) {
+				line[nqubits-1-(control.first+i)] = 1;
+				line[nqubits-1-target.first] = 2;
+				QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+				line[nqubits-1-(control.first+i)] = -1;
+				line[nqubits-1-target.first] = -1;
+				ApplyGate(f);
+			}
+		} else {
+			std::cerr << "Register size does not match for CX gate!" << std::endl;
+		}
 	} else if(sym == Token::Kind::identifier) {
-		//TODO: implement custom gates
+		scan();
+		auto gateIt = compoundGates.find(t.str);
+		if(gateIt != compoundGates.end()) {
+			std::string gate_name = t.str;
+
+			std::vector<Expr*> parameters;
+			std::vector<std::pair<int, int> > arguments;
+			if(sym == Token::Kind::lpar) {
+				scan();
+				if(sym != Token::Kind::rpar) {
+					QASMexpList(parameters);
+				}
+				check(Token::Kind::rpar);
+			}
+			QASMargsList(arguments);
+			check(Token::Kind::semicolon);
+
+			std::map<std::string, std::pair<int, int> > argsMap;
+			std::map<std::string, Expr*> paramsMap;
+			int size = 1;
+			int i = 0;
+			for(auto it = arguments.begin(); it != arguments.end(); it++) {
+				argsMap[gateIt->second.argumentNames[i]] = *it;
+				i++;
+				if(it->second > 1 && size != 1 && it->second != size) {
+					std::cerr << "Register sizes do not match!" << std::endl;
+				}
+				if(it->second > 1) {
+					size = it->second;
+				}
+			}
+			for(int i = 0; i < parameters.size(); i++) {
+				paramsMap[gateIt->second.parameterNames[i]] = parameters[i];
+			}
+
+			for(auto it = gateIt->second.gates.begin(); it != gateIt->second.gates.end(); it++) {
+				if(Ugate* u = dynamic_cast<Ugate*>(*it)) {
+					Expr* theta = RewriteExpr(u->theta, paramsMap);
+					Expr* phi = RewriteExpr(u->phi, paramsMap);
+					Expr* lambda = RewriteExpr(u->lambda, paramsMap);
+
+					for(int i = 0; i < argsMap[u->target].second; i++) {
+						tmp_matrix[0][0] = Cmake(cos(-(phi->num+lambda->num)/2)*cos(theta->num/2), sin(-(phi->num+lambda->num)/2)*cos(theta->num/2));
+						tmp_matrix[0][1] = Cmake(-cos(-(phi->num-lambda->num)/2)*sin(theta->num/2), -sin(-(phi->num-lambda->num)/2)*sin(theta->num/2));
+						tmp_matrix[1][0] = Cmake(cos((phi->num-lambda->num)/2)*sin(theta->num/2), sin((phi->num-lambda->num)/2)*sin(theta->num/2));
+						tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
+
+						line[nqubits-1-(argsMap[u->target].first+i)] = 2;
+						QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
+						line[nqubits-1-(argsMap[u->target].first+i)] = -1;
+
+						ApplyGate(f);
+					}
+					delete theta;
+					delete phi;
+					delete lambda;
+				} else if(CXgate* cx = dynamic_cast<CXgate*>(*it)) {
+					if(argsMap[cx->control].second == argsMap[cx->target].second) {
+						for(int i = 0; i < argsMap[cx->target].second; i++) {
+							line[nqubits-1-(argsMap[cx->control].first+i)] = 1;
+							line[nqubits-1-(argsMap[cx->target].first+i)] = 2;
+							QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+							line[nqubits-1-(argsMap[cx->control].first+i)] = -1;
+							line[nqubits-1-(argsMap[cx->target].first+i)] = -1;
+							ApplyGate(f);
+						}
+					} else if(argsMap[cx->control].second == 1) {
+						for(int i = 0; i < argsMap[cx->target].second; i++) {
+							line[nqubits-1-argsMap[cx->control].first] = 1;
+							line[nqubits-1-(argsMap[cx->target].first+i)] = 2;
+							QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+							line[nqubits-1-argsMap[cx->control].first] = -1;
+							line[nqubits-1-(argsMap[cx->target].first+i)] = -1;
+							ApplyGate(f);
+						}
+					} else if(argsMap[cx->target].second == 1) {
+						for(int i = 0; i < argsMap[cx->target].second; i++) {
+							line[nqubits-1-(argsMap[cx->control].first+i)] = 1;
+							line[nqubits-1-argsMap[cx->target].first] = 2;
+							QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+							line[nqubits-1-(argsMap[cx->control].first+i)] = -1;
+							line[nqubits-1-argsMap[cx->target].first] = -1;
+							ApplyGate(f);
+						}
+					} else {
+						std::cerr << "Register size does not match for CX gate!" << std::endl;
+					}
+
+				}
+			}
+		} else {
+			std::cerr << "Undefined gate: " << t.str << std::endl;
+		}
 	}
-	return QMDDzero;
 }
 
 void QasmSimulator::Reset() {
@@ -255,6 +447,258 @@ void QasmSimulator::Simulate(int shots) {
 	std::cout << "}\n}" << std::endl;
 }
 
+void QasmSimulator::QASMidList(std::vector<std::string>& identifiers) {
+	check(Token::Kind::identifier);
+	identifiers.push_back(t.str);
+	while(sym == Token::Kind::comma) {
+		scan();
+		check(Token::Kind::identifier);
+		identifiers.push_back(t.str);
+	}
+}
+
+QasmSimulator::Expr* QasmSimulator::RewriteExpr(Expr* expr, std::map<std::string, Expr*>& exprMap) {
+	if(expr == NULL) {
+		return NULL;
+	}
+	Expr* op1 = RewriteExpr(expr->op1, exprMap);
+	Expr* op2 = RewriteExpr(expr->op2, exprMap);
+
+	if(expr->kind == Expr::Kind::number) {
+		return new Expr(expr->kind, op1, op2, expr->num, expr->id);
+	} else if(expr->kind == Expr::Kind::plus) {
+		if(op1->kind == Expr::Kind::number && op2->kind == Expr::Kind::number) {
+			op1->num = op1->num + op2->num;
+			delete op2;
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::minus) {
+		if(op1->kind == Expr::Kind::number && op2->kind == Expr::Kind::number) {
+			op1->num = op1->num - op2->num;
+			delete op2;
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::sign) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = -op1->num;
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::times) {
+		if(op1->kind == Expr::Kind::number && op2->kind == Expr::Kind::number) {
+			op1->num = op1->num * op2->num;
+			delete op2;
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::div) {
+		if(op1->kind == Expr::Kind::number && op2->kind == Expr::Kind::number) {
+			op1->num = op1->num / op2->num;
+			delete op2;
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::power) {
+		if(op1->kind == Expr::Kind::number && op2->kind == Expr::Kind::number) {
+			op1->num = pow(op1->num,op2->num);
+			delete op2;
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::sin) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = sin(op1->num);
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::cos) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = cos(op1->num);
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::tan) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = tan(op1->num);
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::exp) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = exp(op1->num);
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::ln) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = log(op1->num);
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::sqrt) {
+		if(op1->kind == Expr::Kind::number) {
+			op1->num = sqrt(op1->num);
+			return op1;
+		}
+	} else if(expr->kind == Expr::Kind::id) {
+		return new Expr(*exprMap[expr->id]);
+	}
+
+	return new Expr(expr->kind, op1, op2, expr->num, expr->id);
+}
+
+void QasmSimulator::QASMgateDecl() {
+	check(Token::Kind::gate);
+	check(Token::Kind::identifier);
+
+	CompoundGate gate;
+	std::string gateName = t.str;
+	if(sym == Token::Kind::lpar) {
+		scan();
+		if(sym != Token::Kind::rpar) {
+			QASMidList(gate.parameterNames);
+		}
+		check(Token::Kind::rpar);
+	}
+	QASMidList(gate.argumentNames);
+	check(Token::Kind::lbrace);
+
+
+	while(sym != Token::Kind::rbrace) {
+		if(sym == Token::Kind::ugate) {
+			scan();
+			check(Token::Kind::lpar);
+			Expr* theta = QASMexp();
+			check(Token::Kind::comma);
+			Expr* phi = QASMexp();
+			check(Token::Kind::comma);
+			Expr* lambda = QASMexp();
+			check(Token::Kind::rpar);
+			check(Token::Kind::identifier);
+
+			gate.gates.push_back(new Ugate(theta, phi, lambda, t.str));
+			check(Token::Kind::semicolon);
+		} else if(sym == Token::Kind::cxgate) {
+			scan();
+			check(Token::Kind::identifier);
+			std::string control = t.str;
+			check(Token::Kind::comma);
+			check(Token::Kind::identifier);
+			gate.gates.push_back(new CXgate(control, t.str));
+			check(Token::Kind::semicolon);
+
+		} else if(sym == Token::Kind::identifier) {
+			scan();
+			std::string name = t.str;
+
+			std::vector<Expr* > parameters;
+			std::vector<std::string> arguments;
+			if(sym == Token::Kind::lpar) {
+				scan();
+				if(sym != Token::Kind::rpar) {
+					QASMexpList(parameters);
+				}
+				check(Token::Kind::rpar);
+			}
+			QASMidList(arguments);
+			check(Token::Kind::semicolon);
+
+			CompoundGate g = compoundGates[name];
+			std::map<std::string, std::string> argsMap;
+			for(int i = 0; i < arguments.size(); i++) {
+				argsMap[g.argumentNames[i]] = arguments[i];
+			}
+
+			std::map<std::string, Expr*> paramsMap;
+			for(int i = 0; i < parameters.size(); i++) {
+				paramsMap[g.parameterNames[i]] = parameters[i];
+			}
+
+			for(auto it = g.gates.begin(); it != g.gates.end(); it++) {
+				if(Ugate* u = dynamic_cast<Ugate*>(*it)) {
+					gate.gates.push_back(new Ugate(RewriteExpr(u->theta, paramsMap), RewriteExpr(u->phi, paramsMap), RewriteExpr(u->lambda, paramsMap), argsMap[u->target]));
+				} else if(CXgate* cx = dynamic_cast<CXgate*>(*it)) {
+					gate.gates.push_back(new CXgate(argsMap[cx->control], argsMap[cx->target]));
+				} else {
+					std::cerr << "Unexpected gate!" << std::endl;
+				}
+			}
+		} else {
+			std::cerr << "Error in gate declaration!" << std::endl;
+		}
+	}
+
+#if VERBOSE
+	std::cout << "Declared gate \"" << gateName << "\":" << std::endl;
+	for(auto it = gate.gates.begin(); it != gate.gates.end(); it++) {
+		if(Ugate* u = dynamic_cast<Ugate*>(*it)) {
+			std::cout << "  U(";
+			printExpr(u->theta);
+			std::cout << ", ";
+			printExpr(u->phi);
+			std::cout << ", ";
+			printExpr(u->lambda);
+			std::cout << ") "<< u->target << ";" << std::endl;
+		} else if(CXgate* cx = dynamic_cast<CXgate*>(*it)) {
+			std::cout << "  CX " << cx->control << ", " << cx->target << ";" << std::endl;
+		} else {
+			std::cout << "other gate" << std::endl;
+		}
+	}
+#endif
+
+	compoundGates[gateName] = gate;
+
+	check(Token::Kind::rbrace);
+}
+
+void QasmSimulator::printExpr(Expr* expr) {
+	if(expr->kind == Expr::Kind::number) {
+		std::cout << expr->num;
+	} else if(expr->kind == Expr::Kind::plus) {
+		printExpr(expr->op1);
+		std::cout << " + ";
+		printExpr(expr->op2);
+	} else if(expr->kind == Expr::Kind::minus) {
+		printExpr(expr->op1);
+		std::cout << " - ";
+		printExpr(expr->op2);
+	} else if(expr->kind == Expr::Kind::sign) {
+		std::cout << "( - ";
+		printExpr(expr->op1);
+		std::cout << " )";
+	} else if(expr->kind == Expr::Kind::times) {
+		printExpr(expr->op1);
+		std::cout << " * ";
+		printExpr(expr->op2);
+	} else if(expr->kind == Expr::Kind::div) {
+		printExpr(expr->op1);
+		std::cout << " / ";
+		printExpr(expr->op2);
+	} else if(expr->kind == Expr::Kind::power) {
+		printExpr(expr->op1);
+		std::cout << " ^ ";
+		printExpr(expr->op2);
+	} else if(expr->kind == Expr::Kind::sin) {
+		std::cout << "sin(";
+		printExpr(expr->op1);
+		std::cout << ")";
+	} else if(expr->kind == Expr::Kind::cos) {
+		std::cout << "cos(";
+		printExpr(expr->op1);
+		std::cout << ")";
+	} else if(expr->kind == Expr::Kind::tan) {
+		std::cout << "tan(";
+		printExpr(expr->op1);
+		std::cout << ")";
+	} else if(expr->kind == Expr::Kind::exp) {
+		std::cout << "exp(";
+		printExpr(expr->op1);
+		std::cout << ")";
+	} else if(expr->kind == Expr::Kind::ln) {
+		std::cout << "ln(";
+		printExpr(expr->op1);
+		std::cout << ")";
+	} else if(expr->kind == Expr::Kind::sqrt) {
+		std::cout << "sqrt(";
+		printExpr(expr->op1);
+		std::cout << ")";
+	} else if(expr->kind == Expr::Kind::id) {
+		std::cout << expr->id;
+	}
+}
+
 void QasmSimulator::Simulate() {
 
 	scan();
@@ -290,9 +734,9 @@ void QasmSimulator::Simulate() {
 			check(Token::Kind::semicolon);
 			//TODO: implement
 		} else if(sym == Token::Kind::ugate || sym == Token::Kind::cxgate || sym == Token::Kind::identifier) {
-			f = gateQASM();
-
-			ApplyGate(f);
+			QASMgate();
+		} else if(sym == Token::Kind::gate) {
+			QASMgateDecl();
 		} else if(sym == Token::Kind::probabilities) {
 			std::cout << "Probabilities of the states |";
 			for(int i=nqubits-1; i>=0; i--) {
