@@ -24,6 +24,12 @@ QasmSimulator::QasmSimulator() {
 QasmSimulator::~QasmSimulator() {
 	delete scanner;
 	delete in;
+
+	for(auto it = compoundGates.begin(); it != compoundGates.end(); it++) {
+		for(auto it2 = it->second.gates.begin(); it2 != it->second.gates.end(); it2++) {
+			delete *it2;
+		}
+	}
 }
 
 void QasmSimulator::scan() {
@@ -613,6 +619,10 @@ void QasmSimulator::QASMgateDecl() {
 				} else {
 					std::cerr << "Unexpected gate!" << std::endl;
 				}
+			}
+
+			for(auto it = parameters.begin(); it != parameters.end(); it++) {
+				delete *it;
 			}
 		} else {
 			std::cerr << "Error in gate declaration!" << std::endl;

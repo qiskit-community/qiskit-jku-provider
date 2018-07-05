@@ -84,6 +84,8 @@ int main(int argc, char** argv) {
 	auto t2 = chrono::high_resolution_clock::now();
 	chrono::duration<float> diff = t2-t1;
 
+	delete simulator;
+
 	if (vm.count("ps")) {
 		cout << endl << "SIMULATION STATS: " << endl;
 		cout << "  Number of applied gates: " << simulator->GetGatecount() << endl;
