@@ -737,6 +737,12 @@ void QasmSimulator::Simulate() {
 			QASMgate();
 		} else if(sym == Token::Kind::gate) {
 			QASMgateDecl();
+		} else if(sym == Token::Kind::include) {
+			scan();
+			check(Token::Kind::string);
+			std::string fname = t.str;
+			scanner->addFileInput(fname);
+			check(Token::Kind::semicolon);
 		} else if(sym == Token::Kind::probabilities) {
 			std::cout << "Probabilities of the states |";
 			for(int i=nqubits-1; i>=0; i--) {
@@ -756,6 +762,50 @@ void QasmSimulator::Simulate() {
 			check(Token::Kind::semicolon);
 		} else {
             std::cerr << "ERROR: unexpected statement!" << std::endl;
+            printToken();
+            exit(1);
 		}
 	} while (sym != Token::Kind::eof);
+}
+
+void QasmSimulator::printToken() {
+	switch(sym) {
+	case Token::Kind::include: std::cout << "include" << std::endl; break;
+	case Token::Kind::none: std::cout << "none" << std::endl; break;
+	case Token::Kind::identifier: std::cout << "identifier" << std::endl; break;
+	case Token::Kind::number: std::cout << "number" << std::endl; break;
+	case Token::Kind::plus: std::cout << "plus" << std::endl; break;
+	case Token::Kind::semicolon: std::cout << "semicolon" << std::endl; break;
+	case Token::Kind::eof: std::cout << "eof" << std::endl; break;
+	case Token::Kind::lpar: std::cout << "lpar" << std::endl; break;
+	case Token::Kind::rpar: std::cout << "rpar" << std::endl; break;
+	case Token::Kind::lbrack: std::cout << "lbrack" << std::endl; break;
+	case Token::Kind::rbrack: std::cout << "rbrack" << std::endl; break;
+	case Token::Kind::lbrace: std::cout << "lbrace" << std::endl; break;
+	case Token::Kind::rbrace: std::cout << "rbrace" << std::endl; break;
+	case Token::Kind::comma: std::cout << "comma" << std::endl; break;
+	case Token::Kind::minus: std::cout << "minus" << std::endl; break;
+	case Token::Kind::times: std::cout << "times" << std::endl; break;
+	case Token::Kind::nninteger: std::cout << "nninteger" << std::endl; break;
+	case Token::Kind::real: std::cout << "real" << std::endl; break;
+	case Token::Kind::qreg: std::cout << "qreg" << std::endl; break;
+	case Token::Kind::creg: std::cout << "creg" << std::endl; break;
+	case Token::Kind::ugate: std::cout << "ugate" << std::endl; break;
+	case Token::Kind::cxgate: std::cout << "cxgate" << std::endl; break;
+	case Token::Kind::gate: std::cout << "gate" << std::endl; break;
+	case Token::Kind::pi: std::cout << "pi" << std::endl; break;
+	case Token::Kind::measure: std::cout << "measure" << std::endl; break;
+	case Token::Kind::openqasm: std::cout << "openqasm" << std::endl; break;
+	case Token::Kind::probabilities: std::cout << "probabilities" << std::endl; break;
+	case Token::Kind::measureall: std::cout << "measureall" << std::endl; break;
+	case Token::Kind::sin: std::cout << "sin" << std::endl; break;
+	case Token::Kind::cos: std::cout << "cos" << std::endl; break;
+	case Token::Kind::tan: std::cout << "tan" << std::endl; break;
+	case Token::Kind::exp: std::cout << "exp" << std::endl; break;
+	case Token::Kind::ln: std::cout << "ln" << std::endl; break;
+	case Token::Kind::sqrt: std::cout << "sqrt" << std::endl; break;
+	case Token::Kind::div: std::cout << "div" << std::endl; break;
+	case Token::Kind::power: std::cout << "power" << std::endl; break;
+	case Token::Kind::string: std::cout << "string" << std::endl; break;
+	}
 }

@@ -143,6 +143,7 @@ private:
 	std::map<std::string, CompoundGate> compoundGates;
 	Expr* RewriteExpr(Expr* expr, std::map<std::string, Expr*>& exprMap);
 	void printExpr(Expr* expr);
+	void printToken();
 };
 
 #endif /* QASM_SIMULATOR_H_ */

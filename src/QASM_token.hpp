@@ -8,7 +8,7 @@
 
 class Token {
  public:
-	enum class Kind {none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, measureall, sin, cos, tan, exp, ln, sqrt, div, power};
+	enum class Kind {include, none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, measureall, sin, cos, tan, exp, ln, sqrt, div, power, string};
 
 	/** Token class (none, ident, ...). */
 	Kind kind;

@@ -41,6 +41,7 @@ QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
         keywords["exp"] = Token::Kind::exp;
         keywords["ln"] = Token::Kind::ln;
         keywords["sqrt"] = Token::Kind::sqrt;
+        keywords["include"] = Token::Kind::include;
         keywords["measure_all"] = Token::Kind::measureall;
         line = 1;
         col = 0;
@@ -48,17 +49,44 @@ QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
         nextCh();
 }
 
+void QASM_scanner::addFileInput(std::string fname) {
+	std::ifstream* in = new std::ifstream (fname, std::ifstream::in);
+	if(in->fail()) {
+		std::cerr << "Failed to open file '" << fname << "'!" << std::endl;
+	} else {
+		streams.push(in);
+		lines.push(LineInfo(ch, line, col));
+		line = 0;
+		col = 0;
+	}
+	nextCh();
+}
+
 void QASM_scanner::nextCh() {
-    if(!in.eof()) {
-    	col++;
-        in.get(ch);
-    } else {
-    	ch = (char) -1;
-    }
-    if(ch == '\n') {
-    	col = 0;
-    	line++;
-    }
+	if(!streams.empty() && streams.top()->eof()) {
+		delete streams.top();
+		streams.pop();
+		ch = lines.top().ch;
+		col = lines.top().col;
+		line = lines.top().line;
+		lines.pop();
+		return;
+	}
+	if(!streams.empty()) {
+		col++;
+		streams.top()->get(ch);
+	} else {
+		if(!in.eof()) {
+			col++;
+			in.get(ch);
+		} else {
+			ch = (char) -1;
+		}
+	}
+	if(ch == '\n') {
+		col = 0;
+		line++;
+	}
 }
 
 Token QASM_scanner::next() {
@@ -146,8 +174,15 @@ Token QASM_scanner::next() {
         case '+': nextCh(); t.kind = Token::Kind::plus; break;
         case '-': nextCh(); t.kind = Token::Kind::minus; break;
         case '*': nextCh(); t.kind = Token::Kind::times; break;
-        case '/': nextCh(); t.kind = Token::Kind::div; break;
+        case '/': nextCh(); if(ch == '/') {
+        						skipComment();
+        						t = next();
+        					} else {
+        						t.kind = Token::Kind::div;
+        					}
+        					break;
         case '^': nextCh(); t.kind = Token::Kind::power; break;
+        case '"': nextCh(); readString(t); nextCh(); break;
         default:
             std::cerr << "ERROR: UNEXPECTED CHARACTER: '" << ch << "'! " << std::endl;
             nextCh();
@@ -155,6 +190,22 @@ Token QASM_scanner::next() {
 
         return t;
     }
+
+void QASM_scanner::readString(Token& t) {
+    	std::stringstream ss;
+        while(ch != '"') {
+            ss << ch;
+            nextCh();
+        }
+        t.str = ss.str();
+        t.kind = Token::Kind::string;
+    }
+
+void QASM_scanner::skipComment() {
+	while(ch != '\n' && ch != (char) -1) {
+		nextCh();
+	}
+}
 
 void QASM_scanner::readName(Token& t) {
     	std::stringstream ss;
