@@ -249,7 +249,7 @@ void QasmSimulator::QASMargsList(std::vector<std::pair<int, int> >& arguments) {
 	}
 }
 
-void QasmSimulator::QASMgate() {
+void QasmSimulator::QASMgate(bool execute) {
 	if(sym == Token::Kind::ugate) {
 		scan();
 		check(Token::Kind::lpar);
@@ -262,18 +262,20 @@ void QasmSimulator::QASMgate() {
 		std::pair<int, int> target = QASMargumentQreg();
 		check(Token::Kind::semicolon);
 
-		for(int i = 0; i < target.second; i++) {
-			tmp_matrix[0][0] = Cmake(cos(-(phi->num+lambda->num)/2)*cos(theta->num/2), sin(-(phi->num+lambda->num)/2)*cos(theta->num/2));
-			tmp_matrix[0][1] = Cmake(-cos(-(phi->num-lambda->num)/2)*sin(theta->num/2), -sin(-(phi->num-lambda->num)/2)*sin(theta->num/2));
-			tmp_matrix[1][0] = Cmake(cos((phi->num-lambda->num)/2)*sin(theta->num/2), sin((phi->num-lambda->num)/2)*sin(theta->num/2));
-			tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
+		if(execute) {
+			for(int i = 0; i < target.second; i++) {
+				tmp_matrix[0][0] = Cmake(cos(-(phi->num+lambda->num)/2)*cos(theta->num/2), sin(-(phi->num+lambda->num)/2)*cos(theta->num/2));
+				tmp_matrix[0][1] = Cmake(-cos(-(phi->num-lambda->num)/2)*sin(theta->num/2), -sin(-(phi->num-lambda->num)/2)*sin(theta->num/2));
+				tmp_matrix[1][0] = Cmake(cos((phi->num-lambda->num)/2)*sin(theta->num/2), sin((phi->num-lambda->num)/2)*sin(theta->num/2));
+				tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
 
-			line[nqubits-1-(target.first+i)] = 2;
+				line[nqubits-1-(target.first+i)] = 2;
 
-			QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
-			line[nqubits-1-(target.first+i)] = -1;
+				QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
+				line[nqubits-1-(target.first+i)] = -1;
 
-			ApplyGate(f);
+				ApplyGate(f);
+			}
 		}
 		delete theta;
 		delete phi;
@@ -290,40 +292,41 @@ void QasmSimulator::QASMgate() {
 		std::pair<int, int> target = QASMargumentQreg();
 		check(Token::Kind::semicolon);
 
-		if(control.second == target.second) {
-			for(int i = 0; i < target.second; i++) {
-				line[nqubits-1-(control.first+i)] = 1;
-				line[nqubits-1-(target.first+i)] = 2;
-				QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-				line[nqubits-1-(control.first+i)] = -1;
-				line[nqubits-1-(target.first+i)] = -1;
-				ApplyGate(f);
+		if(execute) {
+			if(control.second == target.second) {
+				for(int i = 0; i < target.second; i++) {
+					line[nqubits-1-(control.first+i)] = 1;
+					line[nqubits-1-(target.first+i)] = 2;
+					QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+					line[nqubits-1-(control.first+i)] = -1;
+					line[nqubits-1-(target.first+i)] = -1;
+					ApplyGate(f);
+				}
+			} else if(control.second == 1) {
+				for(int i = 0; i < target.second; i++) {
+					line[nqubits-1-control.first] = 1;
+					line[nqubits-1-(target.first+i)] = 2;
+					QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+					line[nqubits-1-control.first] = -1;
+					line[nqubits-1-(target.first+i)] = -1;
+					ApplyGate(f);
+				}
+			} else if(target.second == 1) {
+				for(int i = 0; i < target.second; i++) {
+					line[nqubits-1-(control.first+i)] = 1;
+					line[nqubits-1-target.first] = 2;
+					QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+					line[nqubits-1-(control.first+i)] = -1;
+					line[nqubits-1-target.first] = -1;
+					ApplyGate(f);
+				}
+			} else {
+				std::cerr << "Register size does not match for CX gate!" << std::endl;
 			}
-		} else if(control.second == 1) {
-			for(int i = 0; i < target.second; i++) {
-				line[nqubits-1-control.first] = 1;
-				line[nqubits-1-(target.first+i)] = 2;
-				QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-				line[nqubits-1-control.first] = -1;
-				line[nqubits-1-(target.first+i)] = -1;
-				ApplyGate(f);
-			}
-		} else if(target.second == 1) {
-			for(int i = 0; i < target.second; i++) {
-				line[nqubits-1-(control.first+i)] = 1;
-				line[nqubits-1-target.first] = 2;
-				QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-				line[nqubits-1-(control.first+i)] = -1;
-				line[nqubits-1-target.first] = -1;
-				ApplyGate(f);
-			}
-		} else {
-			std::cerr << "Register size does not match for CX gate!" << std::endl;
-		}
 #if VERBOSE
 		std::cout << "Applied gate: CX" << std::endl;
 #endif
-
+		}
 	} else if(sym == Token::Kind::identifier) {
 		scan();
 		auto gateIt = compoundGates.find(t.str);
@@ -342,83 +345,84 @@ void QasmSimulator::QASMgate() {
 			QASMargsList(arguments);
 			check(Token::Kind::semicolon);
 
-			std::map<std::string, std::pair<int, int> > argsMap;
-			std::map<std::string, Expr*> paramsMap;
-			int size = 1;
-			int i = 0;
-			for(auto it = arguments.begin(); it != arguments.end(); it++) {
-				argsMap[gateIt->second.argumentNames[i]] = *it;
-				i++;
-				if(it->second > 1 && size != 1 && it->second != size) {
-					std::cerr << "Register sizes do not match!" << std::endl;
-				}
-				if(it->second > 1) {
-					size = it->second;
-				}
-			}
-			for(int i = 0; i < parameters.size(); i++) {
-				paramsMap[gateIt->second.parameterNames[i]] = parameters[i];
-			}
-
-			for(auto it = gateIt->second.gates.begin(); it != gateIt->second.gates.end(); it++) {
-				if(Ugate* u = dynamic_cast<Ugate*>(*it)) {
-					Expr* theta = RewriteExpr(u->theta, paramsMap);
-					Expr* phi = RewriteExpr(u->phi, paramsMap);
-					Expr* lambda = RewriteExpr(u->lambda, paramsMap);
-
-					for(int i = 0; i < argsMap[u->target].second; i++) {
-						tmp_matrix[0][0] = Cmake(cos(-(phi->num+lambda->num)/2)*cos(theta->num/2), sin(-(phi->num+lambda->num)/2)*cos(theta->num/2));
-						tmp_matrix[0][1] = Cmake(-cos(-(phi->num-lambda->num)/2)*sin(theta->num/2), -sin(-(phi->num-lambda->num)/2)*sin(theta->num/2));
-						tmp_matrix[1][0] = Cmake(cos((phi->num-lambda->num)/2)*sin(theta->num/2), sin((phi->num-lambda->num)/2)*sin(theta->num/2));
-						tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
-
-						line[nqubits-1-(argsMap[u->target].first+i)] = 2;
-						QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
-						line[nqubits-1-(argsMap[u->target].first+i)] = -1;
-
-						ApplyGate(f);
+			if(execute) {
+				std::map<std::string, std::pair<int, int> > argsMap;
+				std::map<std::string, Expr*> paramsMap;
+				int size = 1;
+				int i = 0;
+				for(auto it = arguments.begin(); it != arguments.end(); it++) {
+					argsMap[gateIt->second.argumentNames[i]] = *it;
+					i++;
+					if(it->second > 1 && size != 1 && it->second != size) {
+						std::cerr << "Register sizes do not match!" << std::endl;
 					}
-					delete theta;
-					delete phi;
-					delete lambda;
-				} else if(CXgate* cx = dynamic_cast<CXgate*>(*it)) {
-					if(argsMap[cx->control].second == argsMap[cx->target].second) {
-						for(int i = 0; i < argsMap[cx->target].second; i++) {
-							line[nqubits-1-(argsMap[cx->control].first+i)] = 1;
-							line[nqubits-1-(argsMap[cx->target].first+i)] = 2;
-							QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-							line[nqubits-1-(argsMap[cx->control].first+i)] = -1;
-							line[nqubits-1-(argsMap[cx->target].first+i)] = -1;
-							ApplyGate(f);
-						}
-					} else if(argsMap[cx->control].second == 1) {
-						for(int i = 0; i < argsMap[cx->target].second; i++) {
-							line[nqubits-1-argsMap[cx->control].first] = 1;
-							line[nqubits-1-(argsMap[cx->target].first+i)] = 2;
-							QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-							line[nqubits-1-argsMap[cx->control].first] = -1;
-							line[nqubits-1-(argsMap[cx->target].first+i)] = -1;
-							ApplyGate(f);
-						}
-					} else if(argsMap[cx->target].second == 1) {
-						for(int i = 0; i < argsMap[cx->target].second; i++) {
-							line[nqubits-1-(argsMap[cx->control].first+i)] = 1;
-							line[nqubits-1-argsMap[cx->target].first] = 2;
-							QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
-							line[nqubits-1-(argsMap[cx->control].first+i)] = -1;
-							line[nqubits-1-argsMap[cx->target].first] = -1;
-							ApplyGate(f);
-						}
-					} else {
-						std::cerr << "Register size does not match for CX gate!" << std::endl;
+					if(it->second > 1) {
+						size = it->second;
 					}
-
 				}
-			}
+				for(int i = 0; i < parameters.size(); i++) {
+					paramsMap[gateIt->second.parameterNames[i]] = parameters[i];
+				}
+
+				for(auto it = gateIt->second.gates.begin(); it != gateIt->second.gates.end(); it++) {
+					if(Ugate* u = dynamic_cast<Ugate*>(*it)) {
+						Expr* theta = RewriteExpr(u->theta, paramsMap);
+						Expr* phi = RewriteExpr(u->phi, paramsMap);
+						Expr* lambda = RewriteExpr(u->lambda, paramsMap);
+
+						for(int i = 0; i < argsMap[u->target].second; i++) {
+							tmp_matrix[0][0] = Cmake(cos(-(phi->num+lambda->num)/2)*cos(theta->num/2), sin(-(phi->num+lambda->num)/2)*cos(theta->num/2));
+							tmp_matrix[0][1] = Cmake(-cos(-(phi->num-lambda->num)/2)*sin(theta->num/2), -sin(-(phi->num-lambda->num)/2)*sin(theta->num/2));
+							tmp_matrix[1][0] = Cmake(cos((phi->num-lambda->num)/2)*sin(theta->num/2), sin((phi->num-lambda->num)/2)*sin(theta->num/2));
+							tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
+
+							line[nqubits-1-(argsMap[u->target].first+i)] = 2;
+							QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
+							line[nqubits-1-(argsMap[u->target].first+i)] = -1;
+
+							ApplyGate(f);
+						}
+						delete theta;
+						delete phi;
+						delete lambda;
+					} else if(CXgate* cx = dynamic_cast<CXgate*>(*it)) {
+						if(argsMap[cx->control].second == argsMap[cx->target].second) {
+							for(int i = 0; i < argsMap[cx->target].second; i++) {
+								line[nqubits-1-(argsMap[cx->control].first+i)] = 1;
+								line[nqubits-1-(argsMap[cx->target].first+i)] = 2;
+								QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+								line[nqubits-1-(argsMap[cx->control].first+i)] = -1;
+								line[nqubits-1-(argsMap[cx->target].first+i)] = -1;
+								ApplyGate(f);
+							}
+						} else if(argsMap[cx->control].second == 1) {
+							for(int i = 0; i < argsMap[cx->target].second; i++) {
+								line[nqubits-1-argsMap[cx->control].first] = 1;
+								line[nqubits-1-(argsMap[cx->target].first+i)] = 2;
+								QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+								line[nqubits-1-argsMap[cx->control].first] = -1;
+								line[nqubits-1-(argsMap[cx->target].first+i)] = -1;
+								ApplyGate(f);
+							}
+						} else if(argsMap[cx->target].second == 1) {
+							for(int i = 0; i < argsMap[cx->target].second; i++) {
+								line[nqubits-1-(argsMap[cx->control].first+i)] = 1;
+								line[nqubits-1-argsMap[cx->target].first] = 2;
+								QMDDedge f = QMDDmvlgate(Nm, nqubits, line);
+								line[nqubits-1-(argsMap[cx->control].first+i)] = -1;
+								line[nqubits-1-argsMap[cx->target].first] = -1;
+								ApplyGate(f);
+							}
+						} else {
+							std::cerr << "Register size does not match for CX gate!" << std::endl;
+						}
+					}
+				}
+
 #if VERBOSE
 		std::cout << "Applied gate: " << gate_name << std::endl;
 #endif
-
+			}
 		} else {
 			std::cerr << "Undefined gate: " << t.str << std::endl;
 		}
@@ -583,6 +587,28 @@ QasmSimulator::Expr* QasmSimulator::RewriteExpr(Expr* expr, std::map<std::string
 	return new Expr(expr->kind, op1, op2, expr->num, expr->id);
 }
 
+void QasmSimulator::QASMopaqueGateDecl() {
+	check(Token::Kind::opaque);
+	check(Token::Kind::identifier);
+
+	CompoundGate gate;
+	std::string gateName = t.str;
+	if(sym == Token::Kind::lpar) {
+		scan();
+		if(sym != Token::Kind::rpar) {
+			QASMidList(gate.parameterNames);
+		}
+		check(Token::Kind::rpar);
+	}
+	QASMidList(gate.argumentNames);
+
+	compoundGates[gateName] = gate;
+
+	check(Token::Kind::semicolon);
+	//Opaque gate has an empty body
+}
+
+
 void QasmSimulator::QASMgateDecl() {
 	check(Token::Kind::gate);
 	check(Token::Kind::identifier);
@@ -663,6 +689,12 @@ void QasmSimulator::QASMgateDecl() {
 			for(auto it = parameters.begin(); it != parameters.end(); it++) {
 				delete *it;
 			}
+		} else if(sym == Token::Kind::barrier) {
+			scan();
+			std::vector<std::string> arguments;
+			QASMidList(arguments);
+			check(Token::Kind::semicolon);
+			//Nothing to do here for the simulator
 		} else {
 			std::cerr << "Error in gate declaration!" << std::endl;
 		}
@@ -748,6 +780,49 @@ void QasmSimulator::printExpr(Expr* expr) {
 	}
 }
 
+void QasmSimulator::QASMqop(bool execute) {
+	if(sym == Token::Kind::ugate || sym == Token::Kind::cxgate || sym == Token::Kind::identifier) {
+		QASMgate(execute);
+	} else if(sym == Token::Kind::measure) {
+		scan();
+		std::pair<int, int> qreg = QASMargumentQreg();
+
+		check(Token::Kind::minus);
+		check(Token::Kind::gt);
+		std::pair<std::string, int> creg = QASMargumentCreg();
+		check(Token::Kind::semicolon);
+
+		if(execute) {
+			int creg_size = (creg.second == -1) ? cregs[creg.first].first : 1;
+
+			if(qreg.second == creg_size) {
+				if(creg_size == 1) {
+					cregs[creg.first].second[creg.second] = MeasureOne(nqubits-1-(qreg.first));
+				} else {
+					for(int i = 0; i < creg_size; i++) {
+						cregs[creg.first].second[i] = MeasureOne(nqubits-1-(qreg.first+i));
+					}
+				}
+			} else {
+				std::cerr << "Mismatch of qreg and creg size in measurement" << std::endl;
+			}
+			intermediate_measurement = true;
+		}
+	} else if(sym == Token::Kind::reset) {
+		scan();
+		std::pair<int, int> qreg = QASMargumentQreg();
+
+		check(Token::Kind::semicolon);
+
+		if(execute) {
+			for(int i = 0; i < qreg.second; i++) {
+				ResetQubit(nqubits-1-(qreg.first+i));
+			}
+		}
+
+	}
+}
+
 void QasmSimulator::Simulate() {
 
 	scan();
@@ -787,8 +862,8 @@ void QasmSimulator::Simulate() {
 			}
 			cregs[s] = std::make_pair(n, reg);
 
-		} else if(sym == Token::Kind::ugate || sym == Token::Kind::cxgate || sym == Token::Kind::identifier) {
-			QASMgate();
+		} else if(sym == Token::Kind::ugate || sym == Token::Kind::cxgate || sym == Token::Kind::identifier || sym == Token::Kind::measure || sym == Token::Kind::reset) {
+			QASMqop();
 		} else if(sym == Token::Kind::gate) {
 			QASMgateDecl();
 		} else if(sym == Token::Kind::include) {
@@ -797,29 +872,34 @@ void QasmSimulator::Simulate() {
 			std::string fname = t.str;
 			scanner->addFileInput(fname);
 			check(Token::Kind::semicolon);
-		} else if(sym == Token::Kind::measure) {
+		} else if(sym == Token::Kind::barrier) {
 			scan();
-			std::pair<int, int> qreg = QASMargumentQreg();
-
-			check(Token::Kind::minus);
-			check(Token::Kind::gt);
-			std::pair<std::string, int> creg = QASMargumentCreg();
+			std::vector<std::pair<int, int> > args;
+			QASMargsList(args);
 			check(Token::Kind::semicolon);
+			//Nothing to do here for simulator
+		} else if(sym == Token::Kind::opaque) {
+			QASMopaqueGateDecl();
+		} else if(sym == Token::Kind::_if) {
+			scan();
+			check(Token::Kind::lpar);
+			check(Token::Kind::identifier);
+			std::string creg = t.str;
+			check(Token::Kind::eq);
+			check(Token::Kind::nninteger);
+			int n = t.val;
+			check(Token::Kind::rpar);
 
-			int creg_size = (creg.second == -1) ? cregs[creg.first].first : 1;
-
-			if(qreg.second == creg_size) {
-				if(creg_size == 1) {
-					cregs[creg.first].second[creg.second] = MeasureOne(nqubits-1-(qreg.first));
-				} else {
-					for(int i = 0; i < creg_size; i++) {
-						cregs[creg.first].second[i] = MeasureOne(nqubits-1-(qreg.first+i));
-					}
-				}
+			auto it = cregs.find(creg);
+			if(it == cregs.end()) {
+				std::cerr << "Error in if statement: " << creg << " is not a creg!" << std::endl;
 			} else {
-				std::cerr << "Mismatch of qreg and creg size in measurement" << std::endl;
+				int creg_num = 0;
+				for(int i = it->second.first-1; i >= 0; i--) {
+					creg_num = (creg_num << 1) | (it->second.second[i] & 1);
+				}
+				QASMqop(creg_num == n);
 			}
-			intermediate_measurement = true;
 
 		} else if(sym == Token::Kind::probabilities) {
 			std::cout << "Probabilities of the states |";

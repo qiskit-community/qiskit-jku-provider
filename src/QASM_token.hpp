@@ -11,7 +11,7 @@
 class Token {
  public:
 
-	enum class Kind {include, none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, measureall, sin, cos, tan, exp, ln, sqrt, div, power, string, gt};
+	enum class Kind {include, none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, sin, cos, tan, exp, ln, sqrt, div, power, string, gt, barrier, opaque, _if, eq, reset};
 	static std::map<Kind, std::string> KindNames;
 	/** Token class (none, ident, ...). */
 	Kind kind;

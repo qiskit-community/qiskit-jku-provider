@@ -133,7 +133,9 @@ private:
 	Expr* QASMterm();
 	QasmSimulator::Expr* QASMexp();
 	void QASMgateDecl();
-	void QASMgate();
+	void QASMopaqueGateDecl();
+	void QASMgate(bool execute = true);
+	void QASMqop(bool execute = true);
 	void QASMexpList(std::vector<Expr*>& expressions);
 	void QASMidList(std::vector<std::string>& identifiers);
 	void QASMargsList(std::vector<std::pair<int, int> >& arguments);

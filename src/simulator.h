@@ -45,6 +45,7 @@ protected:
 	void ApplyGate(QMDD_matrix& m);
 	void ApplyGate(QMDDedge gate);
 	void AddVariables(int add, std::string name);
+	void ResetQubit(int index);
 
 	int line[MAXN];
 	int measurements[MAXN];

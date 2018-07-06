@@ -183,9 +183,11 @@ void Simulator::MeasureAll(bool reset_state) {
 		QMDDgarbageCollect();
 		cleanCtable(std::vector<QMDDedge>());
 	}
+	probs.clear();
 }
 
 int Simulator::MeasureOne(int index) {
+
 	std::pair<mpreal, mpreal> probs = AssignProbsOne(circ.e, index);
 
 	QMDDedge e = circ.e;
@@ -244,6 +246,56 @@ int Simulator::MeasureOne(int index) {
 
 	return measurement;
 
+}
+
+void Simulator::ResetQubit(int index) {
+	std::pair<mpreal, mpreal> probs = AssignProbsOne(circ.e, index);
+
+	QMDDedge e = circ.e;
+
+#if VERBOSE
+	std::cout << "  -- reset qubit " << circ.line[index].variable << ": " << std::flush;
+#endif
+
+	mpreal sum = probs.first + probs.second;
+	mpreal norm_factor;
+
+#if VERBOSE
+	std::cout << "p0 = " << probs.first << ", p1 = " << probs.second << std::flush;
+#endif
+
+
+	if(abs(sum - 1) > epsilon) {
+		std::cout << "Numerical error occurred during simulation: |alpha0|^2 + |alpha1|^2 = " << sum << ", but should be 1 before reset!"<< std::endl;
+		exit(1);
+	}
+
+	line[index] = 2;
+
+	if(probs.first == 0) {
+		QMDDedge f = QMDDmvlgate(Nm, circ.n, line);
+		e = QMDDmultiply(f,e);
+		QMDDdecref(circ.e);
+		QMDDincref(e);
+		circ.e = e;
+		probs.first = mpreal(1);
+	}
+
+
+	QMDD_matrix measure_m;
+	measure_m[0][1] = measure_m[1][0] = measure_m[1][1] = COMPLEX_ZERO;
+	measure_m[0][0] = COMPLEX_ONE;
+	norm_factor = probs.first;
+
+	QMDDedge f = QMDDmvlgate(measure_m, circ.n, line);
+
+	line[index] = -1;
+
+	e = QMDDmultiply(f,e);
+	QMDDdecref(circ.e);
+	QMDDincref(e);
+	circ.e = e;
+	circ.e.w = e.w = Cmul(e.w, Cmake(sqrt(mpreal(1)/mpreal(probs.first)), mpreal(0)));
 }
 
 std::pair<mpreal, mpreal> Simulator::AssignProbsOne(QMDDedge e, int index) {

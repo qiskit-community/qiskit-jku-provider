@@ -42,7 +42,10 @@ QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
         keywords["ln"] = Token::Kind::ln;
         keywords["sqrt"] = Token::Kind::sqrt;
         keywords["include"] = Token::Kind::include;
-        keywords["measure_all"] = Token::Kind::measureall;
+        keywords["barrier"] = Token::Kind::barrier;
+        keywords["opaque"] = Token::Kind::opaque;
+        keywords["if"] = Token::Kind::_if;
+        keywords["reset"] = Token::Kind::reset;
         line = 1;
         col = 0;
         ch = 0;
@@ -184,6 +187,13 @@ Token QASM_scanner::next() {
         case '^': nextCh(); t.kind = Token::Kind::power; break;
         case '"': nextCh(); readString(t); nextCh(); break;
         case '>': nextCh(); t.kind = Token::Kind::gt; break;
+        case '=': nextCh(); if(ch == '=') {
+        						nextCh();
+        						t.kind = Token::Kind::eq;
+        					} else {
+        			            std::cerr << "ERROR: UNEXPECTED CHARACTER: '" << ch << "'! " << std::endl;
+        					}
+        					break;
         default:
             std::cerr << "ERROR: UNEXPECTED CHARACTER: '" << ch << "'! " << std::endl;
             nextCh();
