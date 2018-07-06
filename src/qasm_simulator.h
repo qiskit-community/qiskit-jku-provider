@@ -125,8 +125,9 @@ private:
   	std::istream* in;
 	QASM_scanner* scanner;
 	std::map<std::string, std::pair<int ,int> > qregs;
-	std::map<std::string, int> cregs;
-	std::pair<int, int> QASMargument();
+	std::map<std::string, std::pair<int, int*> > cregs;
+	std::pair<int, int> QASMargumentQreg();
+	std::pair<std::string, int> QASMargumentCreg();
 	Expr* QASMexponentiation();
 	Expr* QASMfactor();
 	Expr* QASMterm();
@@ -143,7 +144,6 @@ private:
 	std::map<std::string, CompoundGate> compoundGates;
 	Expr* RewriteExpr(Expr* expr, std::map<std::string, Expr*>& exprMap);
 	void printExpr(Expr* expr);
-	void printToken();
 };
 
 #endif /* QASM_SIMULATOR_H_ */

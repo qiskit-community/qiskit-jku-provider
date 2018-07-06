@@ -19,6 +19,8 @@
 #include <gmp.h>
 #include <mpreal.h>
 
+#define VERBOSE 0
+
 
 class Simulator {
 public:

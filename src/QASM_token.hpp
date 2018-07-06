@@ -6,10 +6,13 @@
 #ifndef TOKEN_H_
 #define TOKEN_H_
 
+#include <map>
+
 class Token {
  public:
-	enum class Kind {include, none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, measureall, sin, cos, tan, exp, ln, sqrt, div, power, string};
 
+	enum class Kind {include, none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, measureall, sin, cos, tan, exp, ln, sqrt, div, power, string, gt};
+	static std::map<Kind, std::string> KindNames;
 	/** Token class (none, ident, ...). */
 	Kind kind;
 

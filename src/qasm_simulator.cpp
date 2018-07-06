@@ -42,12 +42,11 @@ void QasmSimulator::check(Token::Kind expected) {
 	if (sym == expected) {
 		scan();
 	} else {
-		std::cerr << "ERROR while parsing QASM file" << std::endl;
-		std::cerr << "expected";
+		std::cerr << "ERROR while parsing QASM file: expected '" << Token::KindNames[expected] << "' but found '" << Token::KindNames[sym] << "' in line " << la.line << ", column " << la.col << std::endl;
 	}
 }
 
-std::pair<int, int> QasmSimulator::QASMargument() {
+std::pair<int, int> QasmSimulator::QASMargumentQreg() {
 	check(Token::Kind::identifier);
 	std::string s = t.str;
 	if(qregs.find(s) == qregs.end()) {
@@ -63,6 +62,28 @@ std::pair<int, int> QasmSimulator::QASMargument() {
 	}
 	return std::make_pair(qregs[s].first, qregs[s].second);
 }
+
+std::pair<std::string, int> QasmSimulator::QASMargumentCreg() {
+	check(Token::Kind::identifier);
+	std::string s = t.str;
+	if(cregs.find(s) == cregs.end()) {
+		std::cerr << "Argument is not a creg: " << s << std::endl;
+	}
+
+	int index = -1;
+	if(sym == Token::Kind::lbrack) {
+		scan();
+		check(Token::Kind::nninteger);
+		index = t.val;
+		if(index < 0 || index >= cregs[s].first) {
+			std::cerr << "Index of creg " << s << " is out of bounds: " << index << std::endl;
+		}
+		check(Token::Kind::rbrack);
+	}
+
+	return std::make_pair(s, index);
+}
+
 
 QasmSimulator::Expr* QasmSimulator::QASMexponentiation() {
 	Expr* x;
@@ -221,10 +242,10 @@ void QasmSimulator::QASMexpList(std::vector<Expr*>& expressions) {
 }
 
 void QasmSimulator::QASMargsList(std::vector<std::pair<int, int> >& arguments) {
-	arguments.push_back(QASMargument());
+	arguments.push_back(QASMargumentQreg());
 	while(sym == Token::Kind::comma) {
 		scan();
-		arguments.push_back(QASMargument());
+		arguments.push_back(QASMargumentQreg());
 	}
 }
 
@@ -238,7 +259,7 @@ void QasmSimulator::QASMgate() {
 		check(Token::Kind::comma);
 		Expr* lambda = QASMexp();
 		check(Token::Kind::rpar);
-		std::pair<int, int> target = QASMargument();
+		std::pair<int, int> target = QASMargumentQreg();
 		check(Token::Kind::semicolon);
 
 		for(int i = 0; i < target.second; i++) {
@@ -248,6 +269,7 @@ void QasmSimulator::QASMgate() {
 			tmp_matrix[1][1] = Cmake(cos((phi->num+lambda->num)/2)*cos(theta->num/2), sin((phi->num+lambda->num)/2)*cos(theta->num/2));
 
 			line[nqubits-1-(target.first+i)] = 2;
+
 			QMDDedge f = QMDDmvlgate(tmp_matrix, nqubits, line);
 			line[nqubits-1-(target.first+i)] = -1;
 
@@ -256,11 +278,16 @@ void QasmSimulator::QASMgate() {
 		delete theta;
 		delete phi;
 		delete lambda;
+
+#if VERBOSE
+		std::cout << "Applied gate: U" << std::endl;
+#endif
+
 	} else if(sym == Token::Kind::cxgate) {
 		scan();
-		std::pair<int, int> control = QASMargument();
+		std::pair<int, int> control = QASMargumentQreg();
 		check(Token::Kind::comma);
-		std::pair<int, int> target = QASMargument();
+		std::pair<int, int> target = QASMargumentQreg();
 		check(Token::Kind::semicolon);
 
 		if(control.second == target.second) {
@@ -293,6 +320,10 @@ void QasmSimulator::QASMgate() {
 		} else {
 			std::cerr << "Register size does not match for CX gate!" << std::endl;
 		}
+#if VERBOSE
+		std::cout << "Applied gate: CX" << std::endl;
+#endif
+
 	} else if(sym == Token::Kind::identifier) {
 		scan();
 		auto gateIt = compoundGates.find(t.str);
@@ -384,6 +415,10 @@ void QasmSimulator::QASMgate() {
 
 				}
 			}
+#if VERBOSE
+		std::cout << "Applied gate: " << gate_name << std::endl;
+#endif
+
 		} else {
 			std::cerr << "Undefined gate: " << t.str << std::endl;
 		}
@@ -393,6 +428,10 @@ void QasmSimulator::QASMgate() {
 void QasmSimulator::Reset() {
 	Simulator::Reset();
 	qregs.clear();
+
+	for(auto it = cregs.begin(); it != cregs.end(); it++) {
+		delete it->second.second;
+	}
 	cregs.clear();
 	delete scanner;
 	in->clear();
@@ -629,7 +668,7 @@ void QasmSimulator::QASMgateDecl() {
 		}
 	}
 
-#if VERBOSE
+#if VERBOSE & 0
 	std::cout << "Declared gate \"" << gateName << "\":" << std::endl;
 	for(auto it = gate.gates.begin(); it != gate.gates.end(); it++) {
 		if(Ugate* u = dynamic_cast<Ugate*>(*it)) {
@@ -716,8 +755,6 @@ void QasmSimulator::Simulate() {
 	check(Token::Kind::real);
 	check(Token::Kind::semicolon);
 
-	QMDDedge f, tmp;
-
 	do {
 		if(sym == Token::Kind::qreg) {
 
@@ -742,7 +779,14 @@ void QasmSimulator::Simulate() {
 			int n = t.val;
 			check(Token::Kind::rbrack);
 			check(Token::Kind::semicolon);
-			//TODO: implement
+			int* reg = new int[n];
+
+			//Initialize cregs with 0
+			for(int i=0; i<n; i++) {
+				reg[i] = 0;
+			}
+			cregs[s] = std::make_pair(n, reg);
+
 		} else if(sym == Token::Kind::ugate || sym == Token::Kind::cxgate || sym == Token::Kind::identifier) {
 			QASMgate();
 		} else if(sym == Token::Kind::gate) {
@@ -753,6 +797,30 @@ void QasmSimulator::Simulate() {
 			std::string fname = t.str;
 			scanner->addFileInput(fname);
 			check(Token::Kind::semicolon);
+		} else if(sym == Token::Kind::measure) {
+			scan();
+			std::pair<int, int> qreg = QASMargumentQreg();
+
+			check(Token::Kind::minus);
+			check(Token::Kind::gt);
+			std::pair<std::string, int> creg = QASMargumentCreg();
+			check(Token::Kind::semicolon);
+
+			int creg_size = (creg.second == -1) ? cregs[creg.first].first : 1;
+
+			if(qreg.second == creg_size) {
+				if(creg_size == 1) {
+					cregs[creg.first].second[creg.second] = MeasureOne(nqubits-1-(qreg.first));
+				} else {
+					for(int i = 0; i < creg_size; i++) {
+						cregs[creg.first].second[i] = MeasureOne(nqubits-1-(qreg.first+i));
+					}
+				}
+			} else {
+				std::cerr << "Mismatch of qreg and creg size in measurement" << std::endl;
+			}
+			intermediate_measurement = true;
+
 		} else if(sym == Token::Kind::probabilities) {
 			std::cout << "Probabilities of the states |";
 			for(int i=nqubits-1; i>=0; i--) {
@@ -772,50 +840,7 @@ void QasmSimulator::Simulate() {
 			check(Token::Kind::semicolon);
 		} else {
             std::cerr << "ERROR: unexpected statement!" << std::endl;
-            printToken();
             exit(1);
 		}
 	} while (sym != Token::Kind::eof);
-}
-
-void QasmSimulator::printToken() {
-	switch(sym) {
-	case Token::Kind::include: std::cout << "include" << std::endl; break;
-	case Token::Kind::none: std::cout << "none" << std::endl; break;
-	case Token::Kind::identifier: std::cout << "identifier" << std::endl; break;
-	case Token::Kind::number: std::cout << "number" << std::endl; break;
-	case Token::Kind::plus: std::cout << "plus" << std::endl; break;
-	case Token::Kind::semicolon: std::cout << "semicolon" << std::endl; break;
-	case Token::Kind::eof: std::cout << "eof" << std::endl; break;
-	case Token::Kind::lpar: std::cout << "lpar" << std::endl; break;
-	case Token::Kind::rpar: std::cout << "rpar" << std::endl; break;
-	case Token::Kind::lbrack: std::cout << "lbrack" << std::endl; break;
-	case Token::Kind::rbrack: std::cout << "rbrack" << std::endl; break;
-	case Token::Kind::lbrace: std::cout << "lbrace" << std::endl; break;
-	case Token::Kind::rbrace: std::cout << "rbrace" << std::endl; break;
-	case Token::Kind::comma: std::cout << "comma" << std::endl; break;
-	case Token::Kind::minus: std::cout << "minus" << std::endl; break;
-	case Token::Kind::times: std::cout << "times" << std::endl; break;
-	case Token::Kind::nninteger: std::cout << "nninteger" << std::endl; break;
-	case Token::Kind::real: std::cout << "real" << std::endl; break;
-	case Token::Kind::qreg: std::cout << "qreg" << std::endl; break;
-	case Token::Kind::creg: std::cout << "creg" << std::endl; break;
-	case Token::Kind::ugate: std::cout << "ugate" << std::endl; break;
-	case Token::Kind::cxgate: std::cout << "cxgate" << std::endl; break;
-	case Token::Kind::gate: std::cout << "gate" << std::endl; break;
-	case Token::Kind::pi: std::cout << "pi" << std::endl; break;
-	case Token::Kind::measure: std::cout << "measure" << std::endl; break;
-	case Token::Kind::openqasm: std::cout << "openqasm" << std::endl; break;
-	case Token::Kind::probabilities: std::cout << "probabilities" << std::endl; break;
-	case Token::Kind::measureall: std::cout << "measureall" << std::endl; break;
-	case Token::Kind::sin: std::cout << "sin" << std::endl; break;
-	case Token::Kind::cos: std::cout << "cos" << std::endl; break;
-	case Token::Kind::tan: std::cout << "tan" << std::endl; break;
-	case Token::Kind::exp: std::cout << "exp" << std::endl; break;
-	case Token::Kind::ln: std::cout << "ln" << std::endl; break;
-	case Token::Kind::sqrt: std::cout << "sqrt" << std::endl; break;
-	case Token::Kind::div: std::cout << "div" << std::endl; break;
-	case Token::Kind::power: std::cout << "power" << std::endl; break;
-	case Token::Kind::string: std::cout << "string" << std::endl; break;
-	}
 }

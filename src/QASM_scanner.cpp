@@ -183,6 +183,7 @@ Token QASM_scanner::next() {
         					break;
         case '^': nextCh(); t.kind = Token::Kind::power; break;
         case '"': nextCh(); readString(t); nextCh(); break;
+        case '>': nextCh(); t.kind = Token::Kind::gt; break;
         default:
             std::cerr << "ERROR: UNEXPECTED CHARACTER: '" << ch << "'! " << std::endl;
             nextCh();

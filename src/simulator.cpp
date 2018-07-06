@@ -15,6 +15,7 @@ Simulator::Simulator() {
 	}
 	circ.e = QMDDone;
 	QMDDincref(circ.e);
+	circ.n = 0;
 }
 
 Simulator::~Simulator() {
@@ -29,6 +30,10 @@ void Simulator::Reset() {
 	circ.e = QMDDone;
 	QMDDincref(circ.e);
 	circ.n = 0;
+	int max_active = 0;
+	unsigned int complex_limit = 10000;
+	int gatecount = 0;
+	int max_gates = 0x7FFFFFFF;
 }
 
 void Simulator::AddVariables(int add, std::string name) {
@@ -184,7 +189,10 @@ int Simulator::MeasureOne(int index) {
 	std::pair<mpreal, mpreal> probs = AssignProbsOne(circ.e, index);
 
 	QMDDedge e = circ.e;
-	std::cout << "  -- measure qubit " << circ.line[e.p->v].variable << ": " << std::flush;
+
+#if VERBOSE
+	std::cout << "  -- measure qubit " << circ.line[index].variable << ": " << std::flush;
+#endif
 
 	mpreal sum = probs.first + probs.second;
 	mpreal norm_factor;
@@ -194,13 +202,12 @@ int Simulator::MeasureOne(int index) {
 		exit(1);
 	}
 
+#if VERBOSE
 	std::cout << "p0 = " << probs.first << ", p1 = " << probs.second << std::flush;
+#endif
 
 	mpreal n = (mpreal(rand()) / RAND_MAX);
 
-	for(int i=0; i<circ.n; i++) {
-		line[i] = -1;
-	}
 	line[index] = 2;
 
 	QMDD_matrix measure_m;
@@ -209,18 +216,26 @@ int Simulator::MeasureOne(int index) {
 	int measurement;
 
 	if(n < probs.first) {
+#if VERBOSE
 		std::cout << " -> measure 0" << std::endl;
+#endif
 		measure_m[0][0] = COMPLEX_ONE;
 		measurement = 0;
 		norm_factor = probs.first;
 	} else {
+#if VERBOSE
 		std::cout << " -> measure 1" << std::endl;
+#endif
 		measure_m[1][1] = COMPLEX_ONE;
 		measurement = 1;
 		norm_factor = probs.second;
 	}
 
 	QMDDedge f = QMDDmvlgate(measure_m, circ.n, line);
+
+	line[index] = -1;
+
+
 	e = QMDDmultiply(f,e);
 	QMDDdecref(circ.e);
 	QMDDincref(e);
