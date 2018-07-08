@@ -38,19 +38,6 @@ from qiskit.backends import BaseBackend
 from qiskit.backends.local.localjob import LocalJob
 from qiskit.backends.local._simulatorerror import SimulatorError
 
-#for sampling shots from the result distribution
-#elements_dict should not contain zero-prob entries
-#if the elements probabilities sum to less than 1, the last entry is enlarged
-#if the elements probabilities sum to more than 1, anything above 1 is skipped
-def choose_weighted_random(elements_dict):
-    r = random.random()
-    total_prob = 0
-    for (e,p) in elements_dict.items():
-        total_prob += p
-        if r <= total_prob:
-            return e
-    return elements_dict.items()[-1]    
-    
 #this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
     def __init__(self, exe = None):
@@ -155,15 +142,6 @@ class JKUSimulatorWrapper:
             result[clbits] = result.get(clbits, 0) + count
         return result
         
-        
-    def simulate_shots(self, probs, measurement_data):
-        sample = self.sample_from_probs(probs, self.shots)
-        result = {}
-        for qubits, count in sample.items():
-            clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
-            result[clbits] = result.get(clbits, 0) + count
-        return result
-    
     #converting the actual measurement results for all qubits to the clbits that the user expects to see
     def qubits_to_clbits(self, qubits, measurement_data):
         clbits = list('0'*measurement_data['clbits_num'])
@@ -181,18 +159,6 @@ class JKUSimulatorWrapper:
             res.append(arr[i:i+s])
             i = i + s
         return res
-    
-    #given a distribution <probs>, draw <shots> random elements from it
-    def sample_from_probs(self, probs, shots):
-        result = {}
-        for shot in range(shots):
-            res = choose_weighted_random(probs)
-            if res is None:
-                continue #note: this means there are "lost" shots; this should not happen in practice since probs sum to 1
-            if not res in result:
-                result[res] = 0
-            result[res] += 1
-        return result        
     
     #finding the data relevant to measurements and clbits in the qobj_circuit
     def compute_measurement_data(self, qobj_circuit):
