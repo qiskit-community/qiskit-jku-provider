@@ -54,9 +54,9 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         super().setUpClass()
 
         # Set up random circuits
-        n_circuits = 5
+        n_circuits = 20
         min_depth = 1
-        max_depth = 10
+        max_depth = 50
         min_qubits = 1
         max_qubits = 4
         random_circuits = RandomCircuitGenerator(min_qubits=min_qubits,
@@ -71,6 +71,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
                 basis.remove('reset')
             if 'u0' in basis:
                 basis.remove('u0')
+            if 'measure' in basis:
+                basis.remove('measure')
             random_circuits.add_circuits(1, basis=basis)
         cls.rqg = random_circuits
 
