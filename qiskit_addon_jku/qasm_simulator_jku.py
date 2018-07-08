@@ -187,21 +187,13 @@ class JKUSimulatorWrapper:
         #Ignore (and inform the user) any in-circuit measurements
         #Create a mapping of qubit --> classical bit for any end-circuit measurement
         measurement_data = {'mapping': {}, 'clbits': qobj_circuit['compiled_circuit']['header']['clbit_labels'], 'clbits_num': qobj_circuit['compiled_circuit']['header']['number_of_clbits']} #mapping is qubit --> clbit
-        ops = qobj_circuit['compiled_circuit']['operations'][::-1] #reverse order
-        found_non_measure_gate = False
-        found_mid_circuit_measurement = False
+        ops = qobj_circuit['compiled_circuit']['operations']
         for op in ops:
             if op["name"] == "measure":
-                if found_non_measure_gate:
-                    found_mid_circuit_measurement = True
-                    #we should skip this measurement, but right now QISKit optimizes circuits by pushing measurements from the end backward, so we can't ignore this either
-                    #continue
                 measurement_data['mapping'][op['qubits'][0]] = op['clbits'][0]
             else:
-                found_non_measure_gate = True
-        #this warning is meaningless as long as QISKit pushed measurement gates backwards
-        #if found_mid_circuit_measurement:
-            #warnings.warn("Measurements gates in mid-circuit are currently not supported by the JKU simulator backend and will be ignored")
+                if op['qubits'][0] in measurement_data['mapping'].keys():
+                    raise RuntimeError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
         return measurement_data
         
             
