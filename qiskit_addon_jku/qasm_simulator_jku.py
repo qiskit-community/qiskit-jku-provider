@@ -28,6 +28,7 @@ import logging
 import warnings
 import platform
 import os
+import json
 import re
 import subprocess
 from collections import OrderedDict, Counter
@@ -54,11 +55,12 @@ def choose_weighted_random(elements_dict):
 class JKUSimulatorWrapper:
     def __init__(self, exe = None):
         self.seed = 0
+        self.shots = 1
         self.EXEC = exe
         
     #performs the actual external call to the JKU exe
     def run(self, filename):        
-        cmd = [self.EXEC, '--simulate_qasm', filename, '--seed', str(self.seed)]
+        cmd = [self.EXEC, '--simulate_qasm', filename, '--seed', str(self.seed), '--shots', str(self.shots)]
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode() #TODO: improve, use pipes as in qasm
         return output
        
@@ -135,14 +137,24 @@ class JKUSimulatorWrapper:
     
     #parsing the textual JKU output
     def parse_output(self, run_output, measurement_data):
-        #JKU doesn't support shots yet. So our current support is based on getting probabilities and sampling by hand
-        #JKU output is of the form "|0010>: 0.4" for the probabilities, so we grab that with a regexp
+        #JKU probabilities output is of the form "|0010>: 0.4" for the probabilities, so we grab that with a regexp
         probs = dict(filter(lambda x_p: x_p[1] > 0, 
                 map(lambda x_p: (x_p[0], float(x_p[1])), 
                 re.findall('\|(\d+)>: (\d+\.?\d*e?-?\d*)', run_output))))
         result = {}
-        result['counts'] = self.simulate_shots(probs, measurement_data)
+        result['counts'] = self.parse_counts(run_output, measurement_data)
         return result
+    
+    def parse_counts(self, run_output, measurement_data):
+        count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
+        counts_string = re.search(count_regex, run_output).group(1).replace('\r', '').replace('\n','').replace("'", '"')
+        counts = json.loads(counts_string)
+        result = {}
+        for qubits, count in counts.items():
+            clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
+            result[clbits] = result.get(clbits, 0) + count
+        return result
+        
         
     def simulate_shots(self, probs, measurement_data):
         sample = self.sample_from_probs(probs, self.shots)
@@ -205,7 +217,7 @@ EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 DEFAULT_SIMULATOR_PATHS = [
     # This is the path where Makefile creates the simulator by default
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '../out/jku_simulator'
+                                 '../build/jku_simulator'
                                  + EXTENSION)),
     # This is the path where PIP installs the simulator
     os.path.abspath(os.path.join(os.path.dirname(__file__),
