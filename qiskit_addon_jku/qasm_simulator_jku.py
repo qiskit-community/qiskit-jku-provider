@@ -205,11 +205,11 @@ EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 DEFAULT_SIMULATOR_PATHS = [
     # This is the path where Makefile creates the simulator by default
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '../out/quantum_simulator'
+                                 '../out/jku_simulator'
                                  + EXTENSION)),
     # This is the path where PIP installs the simulator
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 'quantum_simulator' + EXTENSION)),
+                                 'jku_simulator' + EXTENSION)),
 ]
 
 class QasmSimulatorJKU(BaseBackend):

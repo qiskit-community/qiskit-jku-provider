@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.0)
-project( quantum_simulator )
+project( jku_simulator )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -13,6 +13,6 @@ FIND_PACKAGE(MPFR++ REQUIRED)
 INCLUDE_DIRECTORIES(${MPFR_INCLUDE_DIRS})
 SET(LIBS ${LIBS} ${MPFR_LIBRARIES})
 
-add_executable(quantum_simulator src/qmdd_simulator.cpp src/QASM_scanner.cpp src/QMDDpackage.cpp src/textFileUtilities.cpp src/qcost.cpp src/timing.cpp  src/QMDDcircuit.cpp src/QMDDcomplexD.cpp src/QMDDreorder.cpp)
+add_executable(jku_simulator src/main.cpp src/simulator.cpp src/qasm_simulator.cpp src/QASM_scanner.cpp src/QASM_token.cpp src/QMDDpackage.cpp src/textFileUtilities.cpp src/qcost.cpp src/timing.cpp  src/QMDDcircuit.cpp src/QMDDcomplexD.cpp src/QMDDreorder.cpp)
 include_directories(src)
-target_link_libraries(quantum_simulator mpfr boost_program_options)
+target_link_libraries(jku_simulator mpfr boost_program_options)
