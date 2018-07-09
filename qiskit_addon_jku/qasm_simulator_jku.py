@@ -40,42 +40,48 @@ from qiskit.backends.local._simulatorerror import SimulatorError
 
 #this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
-    def __init__(self, exe = None):
+    """Converter to and from JKU's simulator"""
+    def __init__(self, exe=None):
         self.seed = 0
         self.shots = 1
-        self.EXEC = exe
-        
-    #performs the actual external call to the JKU exe
-    def run(self, filename):        
-        cmd = [self.EXEC, '--simulate_qasm', filename, '--seed', str(self.seed), '--shots', str(self.shots)]
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode() #TODO: improve, use pipes as in qasm
+        self.exec = exe
+
+    
+    def run(self, filename):
+        """performs the actual external call to the JKU exe"""
+        cmd = [self.exec,
+               '--simulate_qasm', filename,
+               '--seed', str(self.seed),
+               '--shots', str(self.shots)
+              ]
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
         return output
-       
+
     #convert one operation from the qobj file to a QASM line in the format JKU can handle
     def convert_operation_to_line(self, op, qubit_names):
         pi = str(np.pi)
         half_pi = str(np.pi / 2)
-        gate_names = {'u': 'U', 
+        gate_names = {'u': 'U',
                       'u1': 'U', 'u2': 'U', 'u3': 'U',
                       'h': 'U', 'cx': 'CX', 'x': 'U',
                       'y': 'U', 'z': 'U', 's': 'U'}
         gates_to_skip = ['barrier']
-        params = op['params'] + [0]*(3-len(op['params'])) if 'params' in op else [0,0,0]
+        params = op['params'] + [0]*(3-len(op['params'])) if 'params' in op else [0, 0, 0]
         gate_params = {'u': [params[0], params[1], params[2]],
                        'u1': [0, 0, params[0]],
                        'u2': [half_pi, params[0], params[1]],
                        'u3': [params[0], params[1], params[2]],
-                       'h': [half_pi, '0', pi], 
-                       'x': [pi, '0', pi], 
-                       'y': [pi, half_pi, half_pi], 
-                       'z': ['0', '0', pi], 
+                       'h': [half_pi, '0', pi],
+                       'x': [pi, '0', pi],
+                       'y': [pi, half_pi, half_pi],
+                       'z': ['0', '0', pi],
                        's': ['0', '0', half_pi]
-                       }
+                      }
         gate_name = op['name'].lower()
         if gate_name in gates_to_skip:
             return ""
         if not gate_name in gate_names:
-            raise RuntimeError("Error: gate {} is currently not supported by JKU".format(op["name"]))
+            raise RuntimeError("Error: gate {} currently not supported by JKU".format(op["name"]))
         new_gate_name = gate_names[gate_name]
         if new_gate_name == 'U':
             new_gate_name = "U({},{},{})".format(*gate_params[gate_name])
@@ -98,7 +104,7 @@ class JKUSimulatorWrapper:
         qasm_file_lines.append("show_probabilities;\n")
         qasm_content = "\n".join(qasm_file_lines)
         return qasm_content
-       
+
     #convert the qobj circuit to QASM and save as temp file
     def save_circuit_file(self, filename, qobj_circuit):
         qasm = self.convert_qobj_circuit_to_jku_qasm(qobj_circuit)
@@ -108,41 +114,43 @@ class JKUSimulatorWrapper:
     #runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_on_qobj_circuit(self, qobj_circuit):
         #do this before running so we can output warning to the user as soon as possible if needed
-        measurement_data = self.compute_measurement_data(qobj_circuit) 
-        filename = "temp.qasm" #TODO: better name
+        measurement_data = self.compute_measurement_data(qobj_circuit)
+        filename = "temp.qasm"
         self.save_circuit_file(filename, qobj_circuit)
         self.start_time = time.time()
         run_output = self.run(filename)
         self.end_time = time.time()
         result = self.parse_output(run_output, measurement_data)
-        result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time, 
-                       'seed': self.seed, 'shots': self.shots, 
+        result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time,
+                       'seed': self.seed, 'shots': self.shots,
                        'data': {'counts': result['counts']}}
         if 'name' in qobj_circuit:
             result_dict['name'] = qobj_circuit['name']
         return result_dict
-    
+
     #parsing the textual JKU output
     def parse_output(self, run_output, measurement_data):
-        #JKU probabilities output is of the form "|0010>: 0.4" for the probabilities, so we grab that with a regexp
-        probs = dict(filter(lambda x_p: x_p[1] > 0, 
-                map(lambda x_p: (x_p[0], float(x_p[1])), 
-                re.findall('\|(\d+)>: (\d+\.?\d*e?-?\d*)', run_output))))
+        #JKU probabilities output is of the form "|0010>: 0.4" for the probabilities,
+        #so we grab that with a regexp
+        probs = dict(filter(lambda x_p: x_p[1] > 0,
+                            map(lambda x_p: (x_p[0], float(x_p[1])),
+                                re.findall(r'\|(\d+)>: (\d+\.?\d*e?-?\d*)', run_output))))
         result = {}
         result['counts'] = self.parse_counts(run_output, measurement_data)
         return result
-    
+
     def parse_counts(self, run_output, measurement_data):
         count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
-        counts_string = re.search(count_regex, run_output).group(1).replace('\r', '').replace('\n','').replace("'", '"')
+        counts_string = re.search(count_regex, run_output).group(1)
+        counts_string = counts_string.replace('\r', '').replace('\n', '').replace("'", '"')
         counts = json.loads(counts_string)
         result = {}
         for qubits, count in counts.items():
             clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
             result[clbits] = result.get(clbits, 0) + count
         return result
-        
-    #converting the actual measurement results for all qubits to the clbits that the user expects to see
+
+    #converting the actual measurement results for all qubits to clbits the user expects to see
     def qubits_to_clbits(self, qubits, measurement_data):
         clbits = list('0'*measurement_data['clbits_num'])
         for (qubit, clbit) in measurement_data['mapping'].items():
@@ -151,7 +159,7 @@ class JKUSimulatorWrapper:
         #QISKit expects clbits for different registers to be space-separated, i.e. '01 100'
         clbits_lengths = [x[1] for x in measurement_data['clbits']]
         return " ".join(self.slice_by_lengths(s, clbits_lengths))
-        
+
     def slice_by_lengths(self, arr, lengths):
         i = 0
         res = []
@@ -159,12 +167,15 @@ class JKUSimulatorWrapper:
             res.append(arr[i:i+s])
             i = i + s
         return res
-    
+
     #finding the data relevant to measurements and clbits in the qobj_circuit
     def compute_measurement_data(self, qobj_circuit):
         #Ignore (and inform the user) any in-circuit measurements
         #Create a mapping of qubit --> classical bit for any end-circuit measurement
-        measurement_data = {'mapping': {}, 'clbits': qobj_circuit['compiled_circuit']['header']['clbit_labels'], 'clbits_num': qobj_circuit['compiled_circuit']['header']['number_of_clbits']} #mapping is qubit --> clbit
+        header = qobj_circuit['compiled_circuit']['header']
+        measurement_data = {'mapping': {},
+                            'clbits': header['clbit_labels'],
+                            'clbits_num': header['number_of_clbits']}
         ops = qobj_circuit['compiled_circuit']['operations']
         for op in ops:
             if op["name"] == "measure":
@@ -173,8 +184,7 @@ class JKUSimulatorWrapper:
                 if op['qubits'][0] in measurement_data['mapping'].keys():
                     raise RuntimeError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
         return measurement_data
-        
-            
+
 logger = logging.getLogger(__name__)
 
 EXTENSION = '.exe' if platform.system() == 'Windows' else ''
@@ -219,11 +229,11 @@ class QasmSimulatorJKU(BaseBackend):
         try:
             self._configuration['exe'] = next(
                 path for path in paths if (os.path.exists(path) and
-                                            os.path.getsize(path) > 100))
+                                           os.path.getsize(path) > 100))
         except StopIteration:
             raise FileNotFoundError('Simulator executable not found (using %s)' %
                                     self._configuration.get('exe', 'default locations'))
-        
+
     def run(self, q_job):
         return LocalJob(self._run_job, q_job)
 
