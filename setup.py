@@ -50,13 +50,12 @@ class JKUSimulatorBuild(build):
             if current_platform == 'Windows':
                 # We only support MinGW so far
                 cmd_cmake.append("-GMinGW Makefiles")
-            cmd_cmake.append('..')
+            cmd_cmake.append('.')
+            cmd_cmake.append('-Bbuild/lib/qiskit_addon_jku')
 
-            cmd_make = ['make']
+            cmd_make = ['make', '-C', 'build/lib/qiskit_addon_jku']
 
             def compile_simulator():
-                self.mkpath('build')
-                os.chdir('build')
                 call(cmd_cmake)
                 call(cmd_make)
 
