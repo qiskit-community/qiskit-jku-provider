@@ -1,0 +1,5 @@
+include qiskit_addon_jku/jku_simulator
+recursive-include src *
+recursive-include cmake *
+include CMakeLists.txt
+include setup.py
