@@ -234,13 +234,13 @@ class QasmSimulatorJKU(BaseBackend):
             raise FileNotFoundError('Simulator executable not found (using %s)' %
                                     self._configuration.get('exe', 'default locations'))
 
-    def run(self, q_job):
-        return LocalJob(self._run_job, q_job)
+    def run(self, qobj):
+        return LocalJob(self._run_job, qobj)
 
-    def _run_job(self, q_job):
+    def _run_job(self, qobj):
         """Run circuits in q_job"""
         result_list = []
-        qobj = q_job.qobj
+        #qobj = q_job.qobj
         self._validate(qobj)
         s = JKUSimulatorWrapper(self._configuration['exe'])
         if 'seed' in qobj['config']:
@@ -261,7 +261,7 @@ class QasmSimulatorJKU(BaseBackend):
                   'status': 'COMPLETED',
                   'success': True,
                   'time_taken': (end - start)}
-        return Result(result, qobj)
+        return Result(result)
 
     def _validate(self, qobj):
         if qobj['config']['shots'] == 1:
