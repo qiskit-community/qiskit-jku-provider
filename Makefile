@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-.PHONY: style lint test profile
+.PHONY: sim style lint test profile
 
+sim:
+	cmake . -Bbuild
+	make -C build
 # Ignoring generated ones with .py extension.
 lint:
 	pylint -rn qiskit_addon_jku test_jku
