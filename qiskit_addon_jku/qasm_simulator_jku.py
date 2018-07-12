@@ -204,7 +204,7 @@ class QasmSimulatorJKU(BaseBackend):
     """Python interface to JKU's simulator"""
 
     DEFAULT_CONFIGURATION = {
-        'name': 'local_qasm_simulator_jku',
+        'name': 'local_statevector_simulator_jku',
         'url': 'http://iic.jku.at/eda/research/quantum_simulation/',
         'simulator': True,
         'local': True,
