@@ -36,7 +36,7 @@ QMDDinitCtable()
 uint32_t Ctentries;					 // number of complex table entries
 
 
-static mpreal Ctol;
+mpreal Ctol;
 static mpreal Pi;	// Pi is defined using asin function in QMDDinit routine
 
 bool my_compare(__mpfr_struct& x, __mpfr_struct& y);

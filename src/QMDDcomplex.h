@@ -33,6 +33,7 @@ typedef struct
 
 #include "QMDDpackage.h"
 
+extern mpreal Ctol;
 
 
 void Cprint(uint64_t, std::ostream&);
