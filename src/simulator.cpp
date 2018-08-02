@@ -15,6 +15,8 @@ Simulator::Simulator() {
 	}
 	circ.e = QMDDone;
 	QMDDincref(circ.e);
+	beforeMeasurement = QMDDone;
+	QMDDincref(beforeMeasurement);
 	circ.n = 0;
 }
 
@@ -29,11 +31,15 @@ void Simulator::Reset() {
 	nqubits = 0;
 	circ.e = QMDDone;
 	QMDDincref(circ.e);
+	beforeMeasurement = QMDDone;
+	QMDDincref(beforeMeasurement);
 	circ.n = 0;
-	int max_active = 0;
-	unsigned int complex_limit = 10000;
-	int gatecount = 0;
-	int max_gates = 0x7FFFFFFF;
+	max_active = 0;
+	complex_limit = 10000;
+	gatecount = 0;
+	max_gates = 0x7FFFFFFF;
+	intermediate_measurement = false;
+	measurement_done = false;
 }
 
 void Simulator::AddVariables(int add, std::string name) {
@@ -184,6 +190,8 @@ void Simulator::MeasureAll(bool reset_state) {
 		cleanCtable(std::vector<QMDDedge>());
 	}
 	probs.clear();
+
+	measurement_done = true;
 }
 
 int Simulator::MeasureOne(int index) {
@@ -244,8 +252,8 @@ int Simulator::MeasureOne(int index) {
 	circ.e = e;
 	circ.e.w = e.w = Cmul(e.w, Cmake(sqrt(mpreal(1)/mpreal(norm_factor)), mpreal(0)));
 
+	measurement_done = true;
 	return measurement;
-
 }
 
 void Simulator::ResetQubit(int index) {
@@ -433,6 +441,12 @@ void Simulator::ApplyGate(QMDDedge gate) {
 	QMDDdecref(circ.e);
 	circ.e = tmp;
 
+	if(!measurement_done) {
+		QMDDdecref(beforeMeasurement);
+		beforeMeasurement = circ.e;
+		QMDDincref(beforeMeasurement);
+	}
+
 	QMDDgarbageCollect();
 
 	if(ActiveNodeCount > max_active) {
@@ -442,6 +456,7 @@ void Simulator::ApplyGate(QMDDedge gate) {
 	if(Ctable.size() > complex_limit) {
 		std::vector<QMDDedge> v;
 		v.push_back(circ.e);
+		v.push_back(beforeMeasurement);
 
 		cleanCtable(v);
 		v.clear();
@@ -450,6 +465,9 @@ void Simulator::ApplyGate(QMDDedge gate) {
 		}
 	}
 
+	if(measurement_done) {
+		intermediate_measurement = true;
+	}
 }
 
 void Simulator::ApplyGate(QMDD_matrix& m) {
@@ -457,3 +475,8 @@ void Simulator::ApplyGate(QMDD_matrix& m) {
 	ApplyGate(f);
 }
 
+void Simulator::ResetBeforeMeasurement() {
+	QMDDdecref(circ.e);
+	circ.e = beforeMeasurement;
+	QMDDincref(circ.e);
+}

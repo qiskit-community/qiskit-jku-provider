@@ -54,6 +54,7 @@ protected:
 	QMDDrevlibDescription circ;
 
 	bool intermediate_measurement = false;
+	void ResetBeforeMeasurement();
 
 	uint64_t GetElementOfVector(unsigned long long element);
 private:
@@ -73,7 +74,9 @@ private:
 	int gatecount = 0;
 	int max_gates = 0x7FFFFFFF;
 
+	bool measurement_done = false;
 	mpreal epsilon;
+	QMDDedge beforeMeasurement;
 };
 
 #endif /* SRC_SIMULATOR_H_ */

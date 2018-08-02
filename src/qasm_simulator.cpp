@@ -465,6 +465,7 @@ void QasmSimulator::Simulate(int shots) {
 
 	Simulate();
 	if(!intermediate_measurement) {
+		ResetBeforeMeasurement();
 		for(int i = 0; i < shots; i++) {
 			MeasureAll(false);
 			std::stringstream s;
@@ -855,7 +856,6 @@ void QasmSimulator::QASMqop(bool execute) {
 			} else {
 				std::cerr << "Mismatch of qreg and creg size in measurement" << std::endl;
 			}
-			intermediate_measurement = true;
 		}
 	} else if(sym == Token::Kind::reset) {
 		scan();
