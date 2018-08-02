@@ -1,6 +1,3 @@
-
-# -*- coding: utf-8 -*-
-
 # Copyright 2018 IBM RESEARCH. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+.PHONY: sim style lint test profile
 
-"""Local JKU Backend."""
+sim:
+	cmake . -Bbuild
+	make -C build
+# Ignoring generated ones with .py extension.
+lint:
+	pylint -rn qiskit_addon_jku test_jku
 
-from .qasm_simulator_jku import QasmSimulatorJKU
-from .jkuprovider import JKUProvider
+style:
+	pycodestyle --max-line-length=100 qiskit_addon_jku test_jku
 
-__version__ = '0.1.0'
+# Use the -s (starting directory) flag for "unittest discover" is necessary,
+# otherwise the QuantumCircuit header will be modified during the discovery.
+test:
+	python3 -m unittest discover -s test_jku -v
+
+profile:
+	python3 -m unittest discover -p "profile*.py" -v
+

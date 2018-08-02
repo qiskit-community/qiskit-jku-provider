@@ -21,14 +21,18 @@ Example use of the JKU backend
 
 import os
 from qiskit_addon_jku import QasmSimulatorJKU
-from qiskit import execute, load_qasm_file
+from qiskit_addon_jku import JKUProvider
 
+from qiskit import execute, load_qasm_file
+from qiskit.wrapper._wrapper import _DEFAULT_PROVIDER
+
+_DEFAULT_PROVIDER.add_provider(JKUProvider())
 
 def use_jku_backend():
     q_circuit = load_qasm_file('ghz.qasm')
    
     # ProjectQ simulator
-    result = execute(q_circuit, backend=QasmSimulatorJKU(), shots=100).result()
+    result = execute(q_circuit, backend='local_statevector_simulator_jku', shots=100).result()
     print("counts: ")
     print(result.get_counts(q_circuit))
 

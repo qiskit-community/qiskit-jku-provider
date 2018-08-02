@@ -17,8 +17,8 @@
 
 # =============================================================================
 
-from test.python._random_circuit_generator import RandomCircuitGenerator
-from test.python.common import QiskitTestCase
+from test_utils._random_circuit_generator import RandomCircuitGenerator
+from test_utils.common import QiskitTestCase
 
 import random
 import unittest
@@ -27,13 +27,11 @@ import numpy
 from scipy.stats import chi2_contingency
 
 from qiskit_addon_jku import QasmSimulatorJKU
-from qiskit import QuantumJob
+from qiskit import execute
 from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
 from qiskit import ClassicalRegister
 from qiskit.wrapper import get_backend
-import qiskit._compiler
-from qiskit._compiler import compile_circuit
 
 try:
     pq_simulator = QasmSimulatorJKU()
@@ -43,10 +41,10 @@ else:
     _skip_class = False
 
 
-@unittest.skipIf(_skip_class, 'Project Q C++ simulator unavailable')
+@unittest.skipIf(_skip_class, 'JKU C++ simulator unavailable')
 class TestQasmSimulatorJKU(QiskitTestCase):
     """
-    Test projectq simulator.
+    Test JKU simulator.
     """
 
     @classmethod
@@ -54,9 +52,9 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         super().setUpClass()
 
         # Set up random circuits
-        n_circuits = 5
+        n_circuits = 20
         min_depth = 1
-        max_depth = 10
+        max_depth = 50
         min_qubits = 1
         max_qubits = 4
         random_circuits = RandomCircuitGenerator(min_qubits=min_qubits,
@@ -71,6 +69,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
                 basis.remove('reset')
             if 'u0' in basis:
                 basis.remove('u0')
+            if 'measure' in basis:
+                basis.remove('measure')
             random_circuits.add_circuits(1, basis=basis)
         cls.rqg = random_circuits
 
@@ -81,10 +81,7 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         qc = QuantumCircuit(qr, cr, name='test_gate_x')
         qc.x(qr[0])
         qc.measure(qr, cr)
-        qobj = qiskit._compiler.compile([qc], pq_simulator, shots=shots)
-        q_job = QuantumJob(qobj, pq_simulator, preformatted=True,
-                           resources={'max_credits': qobj['config']['max_credits']})
-        job = pq_simulator.run(q_job)
+        job = execute(qc, pq_simulator, shots=shots)
         result_pq = job.result(timeout=30)
         self.assertEqual(result_pq.get_counts(result_pq.get_names()[0]),
                          {'1': shots})
@@ -100,11 +97,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         for i in range(1, N):
             qc.cx(qr[0], qr[i])
         qc.measure(qr, cr)
-        qobj = qiskit._compiler.compile([qc], pq_simulator, shots=shots)
         timeout = 30
-        q_job = QuantumJob(qobj, pq_simulator, preformatted=True,
-                           resources={'max_credits': qobj['config']['max_credits']})
-        job = pq_simulator.run(q_job)
+        job = execute(qc, pq_simulator, shots=shots)
         result = job.result(timeout=timeout)
         counts = result.get_counts(result.get_names()[0])
         self.log.info(counts)
@@ -116,19 +110,14 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         qk_simulator = get_backend('local_qasm_simulator')
         for circuit in self.rqg.get_circuits(format_='QuantumCircuit'):
             self.log.info(circuit.qasm())
-            compiled_circuit = compile_circuit(circuit)
             shots = 100
-            job_pq = QuantumJob(compiled_circuit,
-                                backend=pq_simulator,
-                                seed=1, shots=shots)
-            job_qk = QuantumJob(compiled_circuit,
-                                backend=qk_simulator,
-                                seed=1, shots=shots)
-            result_pq = pq_simulator.run(job_pq).result()
-            result_qk = qk_simulator.run(job_qk).result()
+            job_pq = execute(circuit, pq_simulator, shots=shots, seed=1)
+            job_qk = execute(circuit, qk_simulator, shots=shots, seed=1)
+            result_pq = job_pq.result()
+            result_qk = job_qk.result()
             counts_pq = result_pq.get_counts(result_pq.get_names()[0])
             counts_qk = result_qk.get_counts(result_qk.get_names()[0])
-            self.log.info('local_qasm_simulator_projectq: %s', str(counts_pq))
+            self.log.info('local_qasm_simulator_jku: %s', str(counts_pq))
             self.log.info('local_qasm_simulator: %s', str(counts_qk))
             states = counts_qk.keys() | counts_pq.keys()
             # contingency table
