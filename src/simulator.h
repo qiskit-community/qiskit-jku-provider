@@ -46,6 +46,7 @@ protected:
 	void ApplyGate(QMDDedge gate);
 	void AddVariables(int add, std::string name);
 	void ResetQubit(int index);
+	mpreal GetProbability();
 
 	int line[MAXN];
 	int measurements[MAXN];
@@ -54,8 +55,10 @@ protected:
 
 	bool intermediate_measurement = false;
 
-	uint64_t GetElementOfVector(QMDDedge e, unsigned long element);
+	uint64_t GetElementOfVector(unsigned long long element);
 private:
+
+	mpreal GetProbabilityRec(QMDDedge& e);
 	QMDDedge AddVariablesRec(QMDDedge e, QMDDedge t, int add);
 	mpreal AssignProbs(QMDDedge& e);
 	std::pair<mpreal, mpreal> AssignProbsOne(QMDDedge e, int index);

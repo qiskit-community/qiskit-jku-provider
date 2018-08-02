@@ -46,6 +46,7 @@ QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
         keywords["opaque"] = Token::Kind::opaque;
         keywords["if"] = Token::Kind::_if;
         keywords["reset"] = Token::Kind::reset;
+        keywords["snapshot"] = Token::Kind::snapshot;
         line = 1;
         col = 0;
         ch = 0;

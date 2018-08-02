@@ -39,6 +39,8 @@ int main(int argc, char** argv) {
 	    ("simulate_qasm", po::value<string>()->implicit_value(""), "simulate a quantum circuit given in QPENQASM 2.0 format (if no file is given, the circuit is read from stdin)")
 		("shots", po::value<unsigned int>(), "number of shots")
 		("ps", "print simulation stats (applied gates, sim. time, and maximal size of the DD)")
+		("display_statevector", "adds the state-vector to snapshots")
+		("display_probabilities", "adds the probabilities of the basis states to snapshots")
 	;
 
 	po::variables_map vm;
@@ -64,9 +66,9 @@ int main(int argc, char** argv) {
 	if (vm.count("simulate_qasm")) {
 		string fname = vm["simulate_qasm"].as<string>();
 		if(fname == "") {
-			simulator = new QasmSimulator();
+			simulator = new QasmSimulator(vm.count("display_statevector"), vm.count("display_probabilities"));
 		} else {
-			simulator = new QasmSimulator(fname);
+			simulator = new QasmSimulator(fname, vm.count("display_statevector"), vm.count("display_probabilities"));
 		}
 	} else {
 		cout << description << "\n";
