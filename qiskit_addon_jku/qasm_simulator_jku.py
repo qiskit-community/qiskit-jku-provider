@@ -45,8 +45,16 @@ class JKUSimulatorWrapper:
         self.seed = 0
         self.shots = 1
         self.exec = exe
+        self.additional_output_data = []
 
-    
+    def set_config(self, config):
+        if 'data' in config: #additional output data specifications
+            self.additional_output_data = config['data']
+        if 'seed' in config and config['seed'] is not None:
+            self.seed = config['seed']
+        else:
+            self.seed = random.getrandbits(32)
+            
     def run(self, filename):
         """performs the actual external call to the JKU exe"""
         cmd = [self.exec,
@@ -54,7 +62,9 @@ class JKUSimulatorWrapper:
                '--seed', str(self.seed),
                '--shots', str(self.shots)
               ]
+        #print("running command {}".format(" ".join(cmd)))
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+        #print("DONE running command {}".format(" ".join(cmd)))
         return output
 
     #convert one operation from the qobj file to a QASM line in the format JKU can handle
@@ -65,7 +75,7 @@ class JKUSimulatorWrapper:
                       'u1': 'U', 'u2': 'U', 'u3': 'U',
                       'h': 'U', 'cx': 'CX', 'x': 'U',
                       'y': 'U', 'z': 'U', 's': 'U'}
-        gates_to_skip = ['barrier']
+        gates_to_skip = ['barrier', 'snapshot']
         params = op['params'] + [0]*(3-len(op['params'])) if 'params' in op else [0, 0, 0]
         gate_params = {'u': [params[0], params[1], params[2]],
                        'u1': [0, 0, params[0]],
@@ -101,8 +111,9 @@ class JKUSimulatorWrapper:
         for op in circuit['operations']:
             if op["name"] != "measure":
                 qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names))
-        qasm_file_lines.append("show_probabilities;\n")
-        qasm_content = "\n".join(qasm_file_lines)
+        if 'probabilities' in self.additional_output_data:
+            qasm_file_lines.append("show_probabilities;")
+        qasm_content = "\n".join(qasm_file_lines) + "\n"
         return qasm_content
 
     #convert the qobj circuit to QASM and save as temp file
@@ -113,6 +124,7 @@ class JKUSimulatorWrapper:
 
     #runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_on_qobj_circuit(self, qobj_circuit):
+        self.set_config(qobj_circuit['config'])
         #do this before running so we can output warning to the user as soon as possible if needed
         measurement_data = self.compute_measurement_data(qobj_circuit)
         filename = "temp.qasm"
@@ -120,10 +132,10 @@ class JKUSimulatorWrapper:
         self.start_time = time.time()
         run_output = self.run(filename)
         self.end_time = time.time()
-        result = self.parse_output(run_output, measurement_data)
+        output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time,
                        'seed': self.seed, 'shots': self.shots,
-                       'data': {'counts': result['counts']}}
+                       'data': output_data}
         if 'name' in qobj_circuit:
             result_dict['name'] = qobj_circuit['name']
         return result_dict
@@ -136,9 +148,13 @@ class JKUSimulatorWrapper:
                             map(lambda x_p: (x_p[0], float(x_p[1])),
                                 re.findall(r'\|(\d+)>: (\d+\.?\d*e?-?\d*)', run_output))))
         result = {}
+        if 'probabilities' in self.additional_output_data:
+            result['probabilities'] = list(map(lambda s: probs[s] if s in probs else 0,
+                                               map(lambda x: "".join(x)[::-1],
+                                                   itertools.product('01', repeat = measurement_data['qubits_num']))))
         result['counts'] = self.parse_counts(run_output, measurement_data)
         return result
-
+            
     def parse_counts(self, run_output, measurement_data):
         count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
         counts_string = re.search(count_regex, run_output).group(1)
@@ -175,7 +191,8 @@ class JKUSimulatorWrapper:
         header = qobj_circuit['compiled_circuit']['header']
         measurement_data = {'mapping': {},
                             'clbits': header['clbit_labels'],
-                            'clbits_num': header['number_of_clbits']}
+                            'clbits_num': header['number_of_clbits'],
+                            'qubits_num': header['number_of_qubits']}
         ops = qobj_circuit['compiled_circuit']['operations']
         for op in ops:
             if op["name"] == "measure":
@@ -210,7 +227,7 @@ class QasmSimulatorJKU(BaseBackend):
         'local': True,
         'description': 'JKU C++ simulator',
         'coupling_map': 'all-to-all',
-        "basis_gates": 'u0,u1,u2,u3,cx,x,y,z,h,s,t'
+        "basis_gates": 'u0,u1,u2,u3,cx,x,y,z,h,s,t,snapshot'
     }
 
     def __init__(self, configuration=None):
@@ -243,10 +260,6 @@ class QasmSimulatorJKU(BaseBackend):
         #qobj = q_job.qobj
         self._validate(qobj)
         s = JKUSimulatorWrapper(self._configuration['exe'])
-        if 'seed' in qobj['config']:
-            s.seed = qobj['config']['seed']
-        else:
-            s.seed = random.getrandbits(32)
         #self._shots = qobj['config']['shots']
         s.shots = qobj['config']['shots']
         start = time.time()
@@ -264,17 +277,8 @@ class QasmSimulatorJKU(BaseBackend):
         return Result(result)
 
     def _validate(self, qobj):
-        if qobj['config']['shots'] == 1:
-            warnings.warn('The behavior of getting statevector from simulators '
-                          'by setting shots=1 is deprecated and will be removed. '
-                          'Use the local_statevector_simulator instead, or place '
-                          'explicit snapshot instructions.',
-                          DeprecationWarning)
-        for circ in qobj['circuits']:
-            if 'measure' not in [op['name'] for
-                                 op in circ['compiled_circuit']['operations']]:
-                logger.warning("no measurements in circuit '%s', "
-                               "classical register will remain all zeros.", circ['name'])
+        #for now, JKU should be ran with shots = 1 and no measurement gates
+        #hence, we do not check for those cases as in the default qasm simulator
         return
 
 
