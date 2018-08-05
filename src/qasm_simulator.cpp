@@ -7,18 +7,22 @@
 
 #include "qasm_simulator.h"
 
-QasmSimulator::QasmSimulator(std::string filename) {
+QasmSimulator::QasmSimulator(std::string filename, bool display_statevector, bool display_probabilities) {
 	in = new std::ifstream (filename, std::ifstream::in);
 	this->scanner = new QASM_scanner(*this->in);
 	this->fname = filename;
+	this->display_probabilities = display_probabilities;
+	this->display_statevector = display_statevector;
 }
 
-QasmSimulator::QasmSimulator() {
+QasmSimulator::QasmSimulator(bool display_statevector, bool display_probabilities) {
 	std::stringstream* in = new std::stringstream();
 	(*in) << std::cin.rdbuf();
 	this->in = in;
 	this->scanner = new QASM_scanner(*this->in);
 	this->fname = "";
+	this->display_probabilities = display_probabilities;
+	this->display_statevector = display_statevector;
 }
 
 QasmSimulator::~QasmSimulator() {
@@ -29,6 +33,10 @@ QasmSimulator::~QasmSimulator() {
 		for(auto it2 = it->second.gates.begin(); it2 != it->second.gates.end(); it2++) {
 			delete *it2;
 		}
+	}
+
+	for(auto it = snapshots.begin(); it != snapshots.end(); it++) {
+		delete it->second;
 	}
 }
 
@@ -441,6 +449,11 @@ void QasmSimulator::Reset() {
 	in->clear();
 	in->seekg(0, in->beg);
 	this->scanner = new QASM_scanner(*this->in);
+
+	for(auto it = snapshots.begin(); it != snapshots.end(); it++) {
+		delete it->second;
+	}
+	snapshots.clear();
 }
 
 void QasmSimulator::Simulate(int shots) {
@@ -452,6 +465,7 @@ void QasmSimulator::Simulate(int shots) {
 
 	Simulate();
 	if(!intermediate_measurement) {
+		ResetBeforeMeasurement();
 		for(int i = 0; i < shots; i++) {
 			MeasureAll(false);
 			std::stringstream s;
@@ -487,13 +501,49 @@ void QasmSimulator::Simulate(int shots) {
 		}
 	}
 
-	std::cout << "{" << std::endl << "'counts': {" << std::endl;
+	std::cout << "{" << std::endl << "  'counts': {" << std::endl;
 	auto it = result.begin();
-	std::cout << "  '" << it->first << "': " << it->second;
+	std::cout << "    '" << it->first << "': " << it->second;
 	for(it++; it != result.end(); it++) {
-		std::cout << ",\n  '" << it->first << "': " << it->second;
+		std::cout << ",\n    '" << it->first << "': " << it->second;
 	}
-	std::cout << "}\n}" << std::endl;
+	std::cout << "  }";
+
+	if(snapshots.size() > 0) {
+		std::cout << "," << std::endl;
+		std::cout << "  'snapshots': {" << std::endl;
+		for(auto it = snapshots.begin(); it != snapshots.end(); it++) {
+			std::cout << "    '" << it->first << "': {" << std::endl;
+			if(display_probabilities) {
+				std::cout << "      'probabilities': [" << it->second->probabilities[0];
+				for(unsigned long long i = 1; i < it->second->len; i++) {
+					std::cout << ", " << it->second->probabilities[i];
+				}
+				std::cout << "]," << std::endl;
+				std::cout << "      'probabilities_ket': {";
+				auto it2 = it->second->probabilities_ket.begin();
+				std::cout << "'" << it2->first << "': " << it2->second;
+				it2++;
+				for(; it2 != it->second->probabilities_ket.end(); it2++) {
+					std::cout << ", '" << it2->first << "': " << it2->second;
+				}
+				std::cout << "}";
+			}
+			if(display_statevector && it->second->statevector != NULL) {
+				if(display_probabilities) {
+					std::cout << "," << std::endl;
+				}
+				std::cout << "      'statevector': [array([" << it->second->statevector[0];
+				for(unsigned long long i = 1; i < it->second->len; i++) {
+					std::cout << ", " << it->second->statevector[i];
+				}
+				std::cout << "])]";
+			}
+			std::cout << std::endl << "    }" << std::endl;
+		}
+		std::cout << "  }" << std::endl;
+	}
+	std::cout << "}" << std::endl;
 }
 
 void QasmSimulator::QASMidList(std::vector<std::string>& identifiers) {
@@ -806,7 +856,6 @@ void QasmSimulator::QASMqop(bool execute) {
 			} else {
 				std::cerr << "Mismatch of qreg and creg size in measurement" << std::endl;
 			}
-			intermediate_measurement = true;
 		}
 	} else if(sym == Token::Kind::reset) {
 		scan();
@@ -901,6 +950,71 @@ void QasmSimulator::Simulate() {
 				QASMqop(creg_num == n);
 			}
 
+		} else if(sym == Token::Kind::snapshot) {
+			scan();
+			check(Token::Kind::lpar);
+			check(Token::Kind::nninteger);
+			int n = t.val;
+			check(Token::Kind::rpar);
+
+			std::vector<std::pair<int, int> > arguments;
+			QASMargsList(arguments);
+
+			check(Token::Kind::semicolon);
+
+			for(auto it = arguments.begin(); it != arguments.end(); it++) {
+				if(it->second != 1) {
+					std::cerr << "ERROR in snapshot: arguments must be qubits" << std::endl;
+				}
+			}
+
+			//TODO: check whether no argument occurs twice!
+
+
+			Snapshot* snapshot = new Snapshot();
+			if(display_probabilities) {
+				snapshot->len = 1ull << (unsigned long long)arguments.size();
+				snapshot->probabilities = new double[snapshot->len];
+				for(unsigned long long i = 0; i < snapshot->len; i++) {
+					int j = arguments.size()-1;
+					for(auto it = arguments.begin(); it != arguments.end(); it++) {
+						line[nqubits-1-it->first] = (i >> j--) & 1;
+					}
+					snapshot->probabilities[i] = GetProbability().toDouble();
+					if(snapshot->probabilities[i] > 0.0) {
+						std::stringstream ss;
+						for(int j = arguments.size()-1; j >= 0; j--) {
+							ss << ((i >> j) & 1);
+						}
+						snapshot->probabilities_ket[ss.str()] = snapshot->probabilities[i];
+					}
+				}
+				for(auto it = arguments.begin(); it != arguments.end(); it++) {
+					line[nqubits-1-it->first] = -1;
+				}
+			}
+			if(display_statevector) {
+				if(arguments.size() != nqubits) {
+					std::cerr << "Snapshot must contain all qubits when containing statevector!" << std::endl;
+				} else {
+					snapshot->len = 1ull << (unsigned long long)arguments.size();
+					snapshot->statevector = new std::string[snapshot->len];
+
+					for(unsigned long long i = 0; i < snapshot->len; i++) {
+						unsigned long long entry = 0;
+						int j = arguments.size()-1;
+						for(auto it = arguments.begin(); it != arguments.end(); it++) {
+							entry |= ((i >> j--) & 1) << (nqubits-1-it->first);
+						}
+						uint64_t res = GetElementOfVector(entry);
+						std::stringstream ss;
+						Cprint(res, ss);
+						snapshot->statevector[i] = ss.str();
+					}
+				}
+			}
+
+			snapshots[n] = snapshot;
 		} else if(sym == Token::Kind::probabilities) {
 			std::cout << "Probabilities of the states |";
 			for(int i=nqubits-1; i>=0; i--) {
@@ -908,7 +1022,7 @@ void QasmSimulator::Simulate() {
 			}
 			std::cout << ">:" << std::endl;
 			for(int i=0; i<(1<<nqubits);i++) {
-				uint64_t res = GetElementOfVector(circ.e,i);
+				uint64_t res = GetElementOfVector(i);
 				std::cout << "  |";
 				for(int j=nqubits-1; j >= 0; j--) {
 					std::cout << ((i >> j) & 1);
@@ -919,7 +1033,7 @@ void QasmSimulator::Simulate() {
 			scan();
 			check(Token::Kind::semicolon);
 		} else {
-            std::cerr << "ERROR: unexpected statement!" << std::endl;
+            std::cerr << "ERROR: unexpected statement: started with " << Token::KindNames[sym] << "!" << std::endl;
             exit(1);
 		}
 	} while (sym != Token::Kind::eof);

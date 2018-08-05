@@ -15,8 +15,8 @@
 
 class QasmSimulator : public Simulator {
 public:
-	QasmSimulator();
-	QasmSimulator(std::string fname);
+	QasmSimulator(bool display_statevector, bool display_probabilities);
+	QasmSimulator(std::string fname, bool display_statevector, bool display_probabilities);
 	virtual ~QasmSimulator();
 
 	void Simulate();
@@ -114,6 +114,22 @@ private:
 		bool opaque;
 	};
 
+	class Snapshot {
+	public:
+		~Snapshot() {
+			if(probabilities != NULL) {
+				delete[] probabilities;
+			}
+			if(statevector != NULL) {
+				delete[] statevector;
+			}
+		}
+
+		unsigned long long len;
+		double* probabilities;
+		std::string* statevector;
+		std::map<std::string, double> probabilities_ket;
+	};
 
 	void scan();
 	void check(Token::Kind expected);
@@ -146,6 +162,12 @@ private:
 	std::map<std::string, CompoundGate> compoundGates;
 	Expr* RewriteExpr(Expr* expr, std::map<std::string, Expr*>& exprMap);
 	void printExpr(Expr* expr);
+
+
+	bool display_statevector;
+	bool display_probabilities;
+
+	std::map<int, Snapshot*> snapshots;
 };
 
 #endif /* QASM_SIMULATOR_H_ */

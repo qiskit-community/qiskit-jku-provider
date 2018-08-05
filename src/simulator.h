@@ -46,6 +46,7 @@ protected:
 	void ApplyGate(QMDDedge gate);
 	void AddVariables(int add, std::string name);
 	void ResetQubit(int index);
+	mpreal GetProbability();
 
 	int line[MAXN];
 	int measurements[MAXN];
@@ -53,9 +54,12 @@ protected:
 	QMDDrevlibDescription circ;
 
 	bool intermediate_measurement = false;
+	void ResetBeforeMeasurement();
 
-	uint64_t GetElementOfVector(QMDDedge e, unsigned long element);
+	uint64_t GetElementOfVector(unsigned long long element);
 private:
+
+	mpreal GetProbabilityRec(QMDDedge& e);
 	QMDDedge AddVariablesRec(QMDDedge e, QMDDedge t, int add);
 	mpreal AssignProbs(QMDDedge& e);
 	std::pair<mpreal, mpreal> AssignProbsOne(QMDDedge e, int index);
@@ -70,7 +74,9 @@ private:
 	int gatecount = 0;
 	int max_gates = 0x7FFFFFFF;
 
+	bool measurement_done = false;
 	mpreal epsilon;
+	QMDDedge beforeMeasurement;
 };
 
 #endif /* SRC_SIMULATOR_H_ */

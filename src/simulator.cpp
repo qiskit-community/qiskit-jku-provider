@@ -15,6 +15,8 @@ Simulator::Simulator() {
 	}
 	circ.e = QMDDone;
 	QMDDincref(circ.e);
+	beforeMeasurement = QMDDone;
+	QMDDincref(beforeMeasurement);
 	circ.n = 0;
 }
 
@@ -29,11 +31,15 @@ void Simulator::Reset() {
 	nqubits = 0;
 	circ.e = QMDDone;
 	QMDDincref(circ.e);
+	beforeMeasurement = QMDDone;
+	QMDDincref(beforeMeasurement);
 	circ.n = 0;
-	int max_active = 0;
-	unsigned int complex_limit = 10000;
-	int gatecount = 0;
-	int max_gates = 0x7FFFFFFF;
+	max_active = 0;
+	complex_limit = 10000;
+	gatecount = 0;
+	max_gates = 0x7FFFFFFF;
+	intermediate_measurement = false;
+	measurement_done = false;
 }
 
 void Simulator::AddVariables(int add, std::string name) {
@@ -184,6 +190,8 @@ void Simulator::MeasureAll(bool reset_state) {
 		cleanCtable(std::vector<QMDDedge>());
 	}
 	probs.clear();
+
+	measurement_done = true;
 }
 
 int Simulator::MeasureOne(int index) {
@@ -244,8 +252,8 @@ int Simulator::MeasureOne(int index) {
 	circ.e = e;
 	circ.e.w = e.w = Cmul(e.w, Cmake(sqrt(mpreal(1)/mpreal(norm_factor)), mpreal(0)));
 
+	measurement_done = true;
 	return measurement;
-
 }
 
 void Simulator::ResetQubit(int index) {
@@ -372,7 +380,8 @@ std::pair<mpreal, mpreal> Simulator::AssignProbsOne(QMDDedge e, int index) {
 	return std::make_pair(pzero, pone);
 }
 
-uint64_t Simulator::GetElementOfVector(QMDDedge e, unsigned long element) {
+uint64_t Simulator::GetElementOfVector(unsigned long long element) {
+	QMDDedge e = circ.e;
 	if(QMDDterminal(e)) {
 		return 0;
 	}
@@ -380,13 +389,46 @@ uint64_t Simulator::GetElementOfVector(QMDDedge e, unsigned long element) {
 	do {
 		l = Cmul(l, e.w);
 		//cout << "variable q" << QMDDinvorder[e.p->v] << endl;
-		long tmp = (element >> QMDDinvorder[e.p->v]) & 1;
+		unsigned long long tmp = (element >> QMDDinvorder[e.p->v]) & 1;
 		e = e.p->e[2*tmp];
 		//element = element % (int)pow(MAXRADIX, QMDDinvorder[e.p->v]+1);
 	} while(!QMDDterminal(e));
 	l = Cmul(l, e.w);
 
 	return l;
+}
+
+mpreal Simulator::GetProbabilityRec(QMDDedge& e) {
+
+	std::unordered_map<uint64_t, mpreal>::iterator it2;
+	std::unordered_map<QMDDnodeptr, mpreal>::iterator it = probs.find(e.p);
+	if(it != probs.end()) {
+		it2 = Cmag.find(e.w & 0x7FFFFFFF7FFFFFFFull);
+		return it2->second * it2->second * it->second;
+	}
+	mpreal sum;
+	if(QMDDterminal(e)) {
+		sum = mpreal(1);
+	} else if(line[e.p->v] == 0) {
+		sum = GetProbabilityRec(e.p->e[0]);
+	} else if(line[e.p->v] == 1) {
+		sum = GetProbabilityRec(e.p->e[2]);
+	} else {
+		sum = GetProbabilityRec(e.p->e[0]) + GetProbabilityRec(e.p->e[2]); //+ AssignProbs(e.p->e[1]) + AssignProbs(e.p->e[3]);
+	}
+
+	probs.insert(std::pair<QMDDnodeptr, mpreal>(e.p, sum));
+
+	it2 = Cmag.find(e.w & 0x7FFFFFFF7FFFFFFFull);
+
+	return it2->second * it2->second * sum;
+}
+
+
+mpreal Simulator::GetProbability() {
+	mpreal result = GetProbabilityRec(circ.e);
+	probs.clear();
+	return result;
 }
 
 void Simulator::ApplyGate(QMDDedge gate) {
@@ -399,6 +441,12 @@ void Simulator::ApplyGate(QMDDedge gate) {
 	QMDDdecref(circ.e);
 	circ.e = tmp;
 
+	if(!measurement_done) {
+		QMDDdecref(beforeMeasurement);
+		beforeMeasurement = circ.e;
+		QMDDincref(beforeMeasurement);
+	}
+
 	QMDDgarbageCollect();
 
 	if(ActiveNodeCount > max_active) {
@@ -408,6 +456,7 @@ void Simulator::ApplyGate(QMDDedge gate) {
 	if(Ctable.size() > complex_limit) {
 		std::vector<QMDDedge> v;
 		v.push_back(circ.e);
+		v.push_back(beforeMeasurement);
 
 		cleanCtable(v);
 		v.clear();
@@ -416,6 +465,9 @@ void Simulator::ApplyGate(QMDDedge gate) {
 		}
 	}
 
+	if(measurement_done) {
+		intermediate_measurement = true;
+	}
 }
 
 void Simulator::ApplyGate(QMDD_matrix& m) {
@@ -423,3 +475,8 @@ void Simulator::ApplyGate(QMDD_matrix& m) {
 	ApplyGate(f);
 }
 
+void Simulator::ResetBeforeMeasurement() {
+	QMDDdecref(circ.e);
+	circ.e = beforeMeasurement;
+	QMDDincref(circ.e);
+}
