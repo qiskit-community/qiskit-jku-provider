@@ -20,7 +20,6 @@ Example use of the JKU backend
 """
 
 import os
-from qiskit_addon_jku import QasmSimulatorJKU
 from qiskit_addon_jku import JKUProvider
 
 from qiskit import execute, load_qasm_file
