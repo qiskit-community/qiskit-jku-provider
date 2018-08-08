@@ -135,9 +135,13 @@ void Simulator::MeasureAll(bool reset_state) {
 	p = AssignProbs(circ.e);
 
 	if(abs(p -1) > epsilon) {
-		std::cerr << "Numerical error occurred during simulation: |alpha0|^2 + |alpha1|^2 = " << p<< ", but should be 1!"<<std::endl;
-		exit(1);
+		if(p == 0) {
+			std::cerr << "ERROR: numerical instabilities led to a 0-vector! Abort simulation!" << std::endl;
+			exit(1);
+		}
+		std::cerr << "WARNING in measurement: numerical instability occurred during simulation: |alpha|^2 + |beta|^2 = " << p << ", but should be 1!"<< std::endl;
 	}
+
 	QMDDedge cur = circ.e;
 	for(int i = QMDDinvorder[circ.e.p->v]; i >= 0;--i) {
 
@@ -213,8 +217,11 @@ int Simulator::MeasureOne(int index) {
 	mpreal norm_factor;
 
 	if(abs(sum - 1) > epsilon) {
-		std::cerr << "Numerical error occurred during simulation: |alpha0|^2 + |alpha1|^2 = " << sum << ", but should be 1!"<< std::endl;
-		exit(1);
+		if(sum == 0) {
+			std::cerr << "ERROR: numerical instabilities led to a 0-vector! Abort simulation!" << std::endl;
+			exit(1);
+		}
+		std::cerr << "WARNING in measurement: numerical instability occurred during simulation: |alpha|^2 + |beta|^2 = " << sum << ", but should be 1!"<< std::endl;
 	}
 
 #if VERBOSE
@@ -230,7 +237,7 @@ int Simulator::MeasureOne(int index) {
 
 	int measurement;
 
-	if(n < probs.first) {
+	if(n < probs.first/sum) {
 #if VERBOSE
 		std::cout << " -> measure 0" << std::endl;
 #endif

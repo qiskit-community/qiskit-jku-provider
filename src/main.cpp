@@ -63,7 +63,9 @@ int main(int argc, char** argv) {
 	QMDDinit(0);
 
 	if (vm.count("precision")) {
-		std::cout << "set precision to " << vm["precision"].as<double>() << std::endl;
+#if VERBOSE
+		std::cout << "Set precision to " << vm["precision"].as<double>() << std::endl;
+#endif
 		Ctol = mpreal(vm["precision"].as<double>());
 	}
 
