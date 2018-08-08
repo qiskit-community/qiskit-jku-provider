@@ -68,6 +68,11 @@ void Simulator::AddVariables(int add, std::string name) {
 
 	nqubits += add;
 	circ.n = nqubits;
+	if(!measurement_done) {
+		QMDDdecref(beforeMeasurement);
+		beforeMeasurement = circ.e;
+		QMDDincref(beforeMeasurement);
+	}
 }
 
 QMDDedge Simulator::AddVariablesRec(QMDDedge e, QMDDedge t, int add) {
