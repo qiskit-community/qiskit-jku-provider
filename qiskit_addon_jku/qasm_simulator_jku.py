@@ -38,6 +38,34 @@ from qiskit.backends import BaseBackend
 from qiskit.backends.local.localjob import LocalJob
 from qiskit.backends.local._simulatorerror import SimulatorError
 
+qelib1 = """gate u3(theta,phi,lambda) q { U(theta,phi,lambda) q; }
+gate u2(phi,lambda) q { U(pi/2,phi,lambda) q; }
+gate u1(lambda) q { U(0,0,lambda) q; }
+gate cx c,t { CX c,t; }
+gate id a { U(0,0,0) a; }
+gate u0(gamma) q { U(0,0,0) q; }
+gate x a { u3(pi,0,pi) a; }
+gate y a { u3(pi,pi/2,pi/2) a; }
+gate z a { u1(pi) a; }
+gate h a { u2(0,pi) a; }
+gate s a { u1(pi/2) a; }
+gate sdg a { u1(-pi/2) a; }
+gate t a { u1(pi/4) a; }
+gate tdg a { u1(-pi/4) a; }
+gate rx(theta) a { u3(theta, -pi/2,pi/2) a; }
+gate ry(theta) a { u3(theta,0,0) a; }
+gate rz(phi) a { u1(phi) a; }
+gate cz a,b { h b; cx a,b; h b; }
+gate cy a,b { sdg b; cx a,b; s b; }
+gate swap a,b { cx a,b; cx b,a; cx a,b; }
+gate ch a,b {h b; sdg b; cx a,b; h b; t b; cx a,b; t b; h b; s b; x b; s a;}
+gate ccx a,b,c {h c; cx b,c; tdg c; cx a,c; t c; cx b,c; tdg c; cx a,c; t b; t c; h c; cx a,b; t a; tdg b; cx a,b;}
+gate cswap a,b,c {cx c,b; ccx a,b,c; cx c,b;}
+gate crz(lambda) a,b {u1(lambda/2) b; cx a,b; u1(-lambda/2) b; cx a,b;}
+gate cu1(lambda) a,b {u1(lambda/2) a; cx a,b; u1(-lambda/2) b; cx a,b; u1(lambda/2) b;}
+gate cu3(theta,phi,lambda) c, t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(phi+lambda)/2) t; cx c,t; u3(theta/2,phi,0) t;}
+gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
+
 #this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
     """Converter to and from JKU's simulator"""
@@ -68,49 +96,33 @@ class JKUSimulatorWrapper:
         return output
 
     #convert one operation from the qobj file to a QASM line in the format JKU can handle
-    def convert_operation_to_line(self, op, qubit_names):
-        pi = str(np.pi)
-        half_pi = str(np.pi / 2)
-        gate_names = {'u': 'U',
-                      'u1': 'U', 'u2': 'U', 'u3': 'U',
-                      'h': 'U', 'cx': 'CX', 'x': 'U',
-                      'y': 'U', 'z': 'U', 's': 'U'}
-        gates_to_skip = ['barrier', 'snapshot']
-        params = op['params'] + [0]*(3-len(op['params'])) if 'params' in op else [0, 0, 0]
-        gate_params = {'u': [params[0], params[1], params[2]],
-                       'u1': [0, 0, params[0]],
-                       'u2': [half_pi, params[0], params[1]],
-                       'u3': [params[0], params[1], params[2]],
-                       'h': [half_pi, '0', pi],
-                       'x': [pi, '0', pi],
-                       'y': [pi, half_pi, half_pi],
-                       'z': ['0', '0', pi],
-                       's': ['0', '0', half_pi]
-                      }
-        gate_name = op['name'].lower()
-        if gate_name in gates_to_skip:
-            return ""
-        if not gate_name in gate_names:
-            raise RuntimeError("Error: gate {} currently not supported by JKU".format(op["name"]))
-        new_gate_name = gate_names[gate_name]
-        if new_gate_name == 'U':
-            new_gate_name = "U({},{},{})".format(*gate_params[gate_name])
-        new_gate_inputs = ", ".join([qubit_names[i] for i in op["qubits"]])
-        return "{} {};".format(new_gate_name, new_gate_inputs)
-
+    def convert_operation_to_line(self, op, qubit_names, clbit_names):
+        name_string = op['name']
+        qubits_string = ", ".join([qubit_names[i] for i in op["qubits"]])
+        if 'params' in op and len(op['params']) > 0:
+            params_string = "({})".format(", ".join([str(p) for p in op['params']]))
+        else:
+            params_string = ""
+        if (name_string == "measure"): #special syntax
+            return "measure {} -> {};".format(qubit_names[op["qubits"][0]], clbit_names[op["clbits"][0]])
+        return "{}{} {};".format(name_string, params_string, qubits_string)
+    
     #converts the full qobj circuit (except measurements) to a QASM file JKU can handle
     def convert_qobj_circuit_to_jku_qasm(self, qobj_circuit):
         circuit = qobj_circuit['compiled_circuit']
         qubit_num = circuit['header']['number_of_qubits']
+        clbit_num = circuit['header']['number_of_clbits']
         #arbitrary qubit names, to use only in the temp qasm file we pass to JKU's simulator
         qubit_names = ['q[{}]'.format(i) for i in range(qubit_num)]
+        clbit_names = ['c[{}]'.format(i) for i in range(clbit_num)]
         qasm_file_lines = []
         qasm_file_lines.append("OPENQASM 2.0;")
+        qasm_file_lines.append("include \"qelib1.inc\";")
         qasm_file_lines.append("qreg q[{}];".format(qubit_num))
-        qasm_file_lines.append("creg s[{}];".format(qubit_num))
+        qasm_file_lines.append("creg c[{}];".format(qubit_num))
         for op in circuit['operations']:
-            if op["name"] != "measure":
-                qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names))
+            #if op["name"] != "measure":
+            qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names, clbit_names))
         if 'probabilities' in self.additional_output_data:
             qasm_file_lines.append("show_probabilities;")
         qasm_content = "\n".join(qasm_file_lines) + "\n"
@@ -129,6 +141,8 @@ class JKUSimulatorWrapper:
         measurement_data = self.compute_measurement_data(qobj_circuit)
         filename = "temp.qasm"
         self.save_circuit_file(filename, qobj_circuit)
+        with open("qelib1.inc", "w") as qelib_file:
+            qelib_file.write(qelib1)
         self.start_time = time.time()
         run_output = self.run(filename)
         self.end_time = time.time()
