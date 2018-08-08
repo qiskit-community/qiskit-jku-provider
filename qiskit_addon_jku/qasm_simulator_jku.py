@@ -146,6 +146,8 @@ class JKUSimulatorWrapper:
         self.start_time = time.time()
         run_output = self.run(filename)
         self.end_time = time.time()
+        os.remove("temp.qasm")
+        os.remove("qelib1.inc")
         output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time,
                        'seed': self.seed, 'shots': self.shots,
