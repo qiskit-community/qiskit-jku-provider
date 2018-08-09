@@ -501,31 +501,31 @@ void QasmSimulator::Simulate(int shots) {
 		}
 	}
 
-	std::cout << "{" << std::endl << "  'counts': {" << std::endl;
+	std::cout << "{" << std::endl << "  \"counts\": {" << std::endl;
 	auto it = result.begin();
-	std::cout << "    '" << it->first << "': " << it->second;
+	std::cout << "    \"" << it->first << "\": " << it->second;
 	for(it++; it != result.end(); it++) {
-		std::cout << ",\n    '" << it->first << "': " << it->second;
+		std::cout << ",\n    \"" << it->first << "\": " << it->second;
 	}
 	std::cout << "  }";
 
 	if(snapshots.size() > 0) {
 		std::cout << "," << std::endl;
-		std::cout << "  'snapshots': {" << std::endl;
+		std::cout << "  \"snapshots\": {" << std::endl;
 		for(auto it = snapshots.begin(); it != snapshots.end(); it++) {
-			std::cout << "    '" << it->first << "': {" << std::endl;
+			std::cout << "    \"" << it->first << "\": {" << std::endl;
 			if(display_probabilities) {
-				std::cout << "      'probabilities': [" << it->second->probabilities[0];
+				std::cout << "      \"probabilities\": [" << it->second->probabilities[0];
 				for(unsigned long long i = 1; i < it->second->len; i++) {
 					std::cout << ", " << it->second->probabilities[i];
 				}
 				std::cout << "]," << std::endl;
-				std::cout << "      'probabilities_ket': {";
+				std::cout << "      \"probabilities_ket\": {";
 				auto it2 = it->second->probabilities_ket.begin();
-				std::cout << "'" << it2->first << "': " << it2->second;
+				std::cout << "\"" << it2->first << "\": " << it2->second;
 				it2++;
 				for(; it2 != it->second->probabilities_ket.end(); it2++) {
-					std::cout << ", '" << it2->first << "': " << it2->second;
+					std::cout << ", \"" << it2->first << "\": " << it2->second;
 				}
 				std::cout << "}";
 			}
@@ -533,11 +533,11 @@ void QasmSimulator::Simulate(int shots) {
 				if(display_probabilities) {
 					std::cout << "," << std::endl;
 				}
-				std::cout << "      'statevector': [array([" << it->second->statevector[0];
+				std::cout << "      \"statevector\": [\"" << it->second->statevector[0];
 				for(unsigned long long i = 1; i < it->second->len; i++) {
-					std::cout << ", " << it->second->statevector[i];
+					std::cout << "\", \"" << it->second->statevector[i];
 				}
-				std::cout << "])]";
+				std::cout << "\"]";
 			}
 			std::cout << std::endl << "    }" << std::endl;
 		}
