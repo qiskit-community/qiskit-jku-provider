@@ -88,8 +88,11 @@ class JKUSimulatorWrapper:
         cmd = [self.exec,
                '--simulate_qasm', filename,
                '--seed', str(self.seed),
-               '--shots', str(self.shots)
+               '--shots', str(self.shots),
+               '--display_statevector',
               ]
+        if 'probabilities' in self.additional_output_data:
+            cmd.append('--display_probabilities')
         #print("running command {}".format(" ".join(cmd)))
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
         #print("DONE running command {}".format(" ".join(cmd)))
@@ -105,6 +108,8 @@ class JKUSimulatorWrapper:
             params_string = ""
         if (name_string == "measure"): #special syntax
             return "measure {} -> {};".format(qubit_names[op["qubits"][0]], clbit_names[op["clbits"][0]])
+        if (name_string == "snapshot"): #some QISKit bug causes snapshot params to be passed as floats
+            params_string = "({})".format(", ".join([str(int(p)) for p in op['params']]))
         return "{}{} {};".format(name_string, params_string, qubits_string)
     
     #converts the full qobj circuit (except measurements) to a QASM file JKU can handle
@@ -121,10 +126,7 @@ class JKUSimulatorWrapper:
         qasm_file_lines.append("qreg q[{}];".format(qubit_num))
         qasm_file_lines.append("creg c[{}];".format(qubit_num))
         for op in circuit['operations']:
-            #if op["name"] != "measure":
-            qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names, clbit_names))
-        if 'probabilities' in self.additional_output_data:
-            qasm_file_lines.append("show_probabilities;")
+             qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names, clbit_names))
         qasm_content = "\n".join(qasm_file_lines) + "\n"
         return qasm_content
 
