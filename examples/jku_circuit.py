@@ -21,18 +21,28 @@ Example use of the JKU backend
 
 import os
 from qiskit_addon_jku import JKUProvider
+from qiskit.extensions.simulator import snapshot
 
-from qiskit import execute, load_qasm_file
+from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, execute
 from qiskit.wrapper._wrapper import _DEFAULT_PROVIDER
 
 _DEFAULT_PROVIDER.add_provider(JKUProvider())
 
 def use_jku_backend():
-    q_circuit = load_qasm_file('ghz.qasm')
-   
-    result = execute(q_circuit, backend='local_statevector_simulator_jku', shots=100).result()
-    print("counts: ")
-    print(result.get_counts(q_circuit))
+    qubits_num = 3
+    qr = QuantumRegister(qubits_num)
+    cr = ClassicalRegister(qubits_num)
+    qc = QuantumCircuit(qr, cr)
+    qc.h(qr[0])
+    qc.cx(qr[0], qr[1])
+    qc.snapshot(0)
+    qc.measure(qr[0], cr[0])
+    qc.measure(qr[1], cr[1])
+    qc.measure(qr[2], cr[2])
+    qc.snapshot(1)
+    config = {"data": ['probabilities', 'probabilities_ket']}
+    result = execute(qc, backend='local_statevector_simulator_jku', shots=1, config=config).result()
+    print(result._result)
 
 if __name__ == "__main__":
     use_jku_backend()

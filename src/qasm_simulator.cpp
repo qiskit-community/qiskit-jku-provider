@@ -539,7 +539,7 @@ void QasmSimulator::Simulate(int shots) {
 				}
 				std::cout << "\"]";
 			}
-			std::cout << std::endl << "    }" << std::endl;
+			std::cout << std::endl << "    }" << (std::next(it,1) != snapshots.end() ? "," : "") << std::endl;
 		}
 		std::cout << "  }" << std::endl;
 	}

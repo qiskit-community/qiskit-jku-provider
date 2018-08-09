@@ -169,6 +169,7 @@ class JKUSimulatorWrapper:
         if 'snapshots' in result:
             for snapshot_key, snapshot_data in result['snapshots'].items():
                 result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
+                
         #print(result)
         #result['counts'] = self.parse_counts(run_output, measurement_data)
         return result
@@ -176,10 +177,25 @@ class JKUSimulatorWrapper:
     def convert_snapshot(self, snapshot_data, translation_table):
         if 'statevector' in snapshot_data:
             snapshot_data['statevector'] = self.convert_statevector_data(snapshot_data['statevector'], translation_table)
+        if 'probabilities' in snapshot_data:
+            probs_data = snapshot_data.pop('probabilities')
+            if 'probabilities' in self.additional_output_data:
+                snapshot_data['probabilities'] = self.convert_probabilities(probs_data, translation_table)
+        if 'probabilities_ket' in snapshot_data:
+            probs_ket_data = snapshot_data.pop('probabilities_ket')
+            if 'probabilities_ket' in self.additional_output_data:
+                snapshot_data['probabilities_ket'] = self.convert_probabilities_ket(probs_ket_data)
         return snapshot_data
             
     def convert_statevector_data(self, statevector, translation_table):
         return [complex(statevector[translation_table[i]].replace('i','j')) for i in range(len(translation_table))]
+    
+    def convert_probabilities(self, probs_data, translation_table):
+        return [probs_data[translation_table[i]] for i in range(len(translation_table))]
+    
+    def convert_probabilities_ket(self, probs_ket_data):
+        return dict([(key[::-1], value) for key,value in probs_ket_data.items()])
+        
         
     def parse_counts(self, run_output, measurement_data):
         count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
@@ -224,7 +240,7 @@ class JKUSimulatorWrapper:
             if op["name"] == "measure":
                 measurement_data['mapping'][op['qubits'][0]] = op['clbits'][0]
             else:
-                if op['qubits'][0] in measurement_data['mapping'].keys():
+                if op['qubits'][0] in measurement_data['mapping'].keys() and not op["name"] == 'snapshot':
                     raise RuntimeError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
         return measurement_data
 
