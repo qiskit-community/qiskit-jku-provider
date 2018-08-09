@@ -160,19 +160,27 @@ class JKUSimulatorWrapper:
 
     #parsing the textual JKU output
     def parse_output(self, run_output, measurement_data):
-        #JKU probabilities output is of the form "|0010>: 0.4" for the probabilities,
-        #so we grab that with a regexp
-        probs = dict(filter(lambda x_p: x_p[1] > 0,
-                            map(lambda x_p: (x_p[0], float(x_p[1])),
-                                re.findall(r'\|(\d+)>: (\d+\.?\d*e?-?\d*)', run_output))))
-        result = {}
-        if 'probabilities' in self.additional_output_data:
-            result['probabilities'] = list(map(lambda s: probs[s] if s in probs else 0,
-                                               map(lambda x: "".join(x)[::-1],
-                                                   itertools.product('01', repeat = measurement_data['qubits_num']))))
-        result['counts'] = self.parse_counts(run_output, measurement_data)
+        result = json.loads(run_output)
+        qubits = measurement_data['qubits_num']
+        translation_table = [0] * 2**qubits #QISKit qubit order is reversed, so we fix accordingly
+        for n in range(2**qubits):
+            translation_table[n] = int(bin(n)[2:].rjust(qubits,'0')[::-1],2)
+        #print(result)
+        if 'snapshots' in result:
+            for snapshot_key, snapshot_data in result['snapshots'].items():
+                result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
+        #print(result)
+        #result['counts'] = self.parse_counts(run_output, measurement_data)
         return result
+    
+    def convert_snapshot(self, snapshot_data, translation_table):
+        if 'statevector' in snapshot_data:
+            snapshot_data['statevector'] = self.convert_statevector_data(snapshot_data['statevector'], translation_table)
+        return snapshot_data
             
+    def convert_statevector_data(self, statevector, translation_table):
+        return [complex(statevector[translation_table[i]].replace('i','j')) for i in range(len(translation_table))]
+        
     def parse_counts(self, run_output, measurement_data):
         count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
         counts_string = re.search(count_regex, run_output).group(1)
