@@ -165,13 +165,9 @@ class JKUSimulatorWrapper:
         translation_table = [0] * 2**qubits #QISKit qubit order is reversed, so we fix accordingly
         for n in range(2**qubits):
             translation_table[n] = int(bin(n)[2:].rjust(qubits,'0')[::-1],2)
-        #print(result)
         if 'snapshots' in result:
             for snapshot_key, snapshot_data in result['snapshots'].items():
                 result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
-                
-        #print(result)
-        #result['counts'] = self.parse_counts(run_output, measurement_data)
         return result
     
     def convert_snapshot(self, snapshot_data, translation_table):
@@ -299,7 +295,6 @@ class QasmSimulatorJKU(BaseBackend):
     def _run_job(self, qobj):
         """Run circuits in q_job"""
         result_list = []
-        #qobj = q_job.qobj
         self._validate(qobj)
         s = JKUSimulatorWrapper(self._configuration['exe'])
         #self._shots = qobj['config']['shots']
