@@ -1,11 +1,29 @@
 /*
- * simulator.cpp
- *
- *  Created on: Jul 3, 2018
- *      Author: zulehner
- */
+DD-based simulator by JKU Linz, Austria
 
-#include <simulator.h>
+Developer: Alwin Zulehner, Robert Wille
+
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
+
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
+
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
+
+#include <Simulator.h>
 
 Simulator::Simulator() {
 	// TODO Auto-generated constructor stub
@@ -59,8 +77,10 @@ void Simulator::AddVariables(int add, std::string name) {
 	QMDDdecref(circ.e);
 	circ.e = f;
 
-	for(int i = nqubits-1; i >= 0; i--) {
-		strncpy(circ.line[i+add].variable, circ.line[i].variable, MAXSTRLEN);
+	if(nqubits != 0) {
+		for(int i = nqubits-1; i >= 0; i--) {
+			strncpy(circ.line[i+add].variable, circ.line[i].variable, MAXSTRLEN);
+		}
 	}
 	for(int i = 0; i < add; i++) {
 		snprintf(circ.line[nqubits + add - 1 - i].variable, MAXSTRLEN , "%s[%d]",name.c_str(), i);

@@ -1,16 +1,28 @@
-/*********************************************
+/*
+DD-based simulator by JKU Linz, Austria
 
-QMDD sifting routines 
+Developer: Alwin Zulehner, Robert Wille
 
-    Michael Miller
-    University of Victoria
-    mmiller@cs.uvic.ca
-    
-    Date: October 10, 2007
-    
-    with extensions by P. Niemann, August-November 2012
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
 
-*********************************************/
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
+
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
+
 #include "QMDDreorder.h"
 
 #define DEBUG_REORDER 0
@@ -221,7 +233,7 @@ void QMDDchangeNonterminal(short v,QMDDedge edge[],QMDDnodeptr p)
   
   if(e.w != COMPLEX_ONE) {
    // normalization factor changed! adjust renormalization factor
-   if (debugSift) { printf("Debug: adjusting renormalization factor of node %d. From ", (intptr_t) e.p); Cprint(e.p->renormFactor);}
+   if (debugSift) { printf("Debug: adjusting renormalization factor of node %ld. From ", (intptr_t) e.p); Cprint(e.p->renormFactor);}
    
     RenormFactorCount++;
    
@@ -243,7 +255,7 @@ void QMDDchangeNonterminal(short v,QMDDedge edge[],QMDDnodeptr p)
   olde=e;
   e=QMDDutLookup(e);  // look it up in the unique tables
   if(olde.p!=e.p) { // found copy of node in the unique table! (this shall never happen!)
-    printf("??? node changed by Unique table-lookup. transfer refs from old vertex (%d: %d) to new vertex (%d: %d). ", (intptr_t) olde.p, olde.p->ref, (intptr_t) e.p, e.p->ref);  
+    printf("??? node changed by Unique table-lookup. transfer refs from old vertex (%ld: %d) to new vertex (%ld: %d). ", (intptr_t) olde.p, olde.p->ref, (intptr_t) e.p, e.p->ref);
     QMDDpause();
     QMDDdebugnode(e.p);
     
@@ -343,7 +355,7 @@ void QMDDswap(int i)
 // note variable positions are numbered 0,1,2,... from bottom of QMDD
 
 {
-  int j,t,v1,v2;
+  int t,v1,v2;
   QMDDnodeptr table[NBUCKET],p,pnext,ptemp, plast;
   char tempLab[MAXSTRLEN]; 
   
@@ -1014,7 +1026,7 @@ void SJTalgorithm(QMDDedge a, int n){
     
     // Output permutation ( if new min or max)
     for (int i=1; printFlag && i<= n; i++)
-	printf("%d (%d), ", perm[i], QMDDorder[i-1]);
+	printf("%d (%ld), ", perm[i], QMDDorder[i-1]);
     
     m=n;
     
@@ -1050,7 +1062,7 @@ void SJTalgorithm(QMDDedge a, int n){
   }
     
     for (int i=1; i<= n; i++)
-	printf("%d (%d), ", perm[i], QMDDorder[i-1]);
+	printf("%d (%ld), ", perm[i], QMDDorder[i-1]);
     printf("%d \n", siftingCostFunction(a));
   
     QMDDinitComputeTable();

@@ -1,10 +1,27 @@
-//============================================================================
-// Name        : qmdd_simulator.cpp
-// Author      : 
-// Version     :
-// Copyright   : 
-// Description : Hello World in C++, Ansi-style
-//============================================================================
+/*
+DD-based simulator by JKU Linz, Austria
+
+Developer: Alwin Zulehner, Robert Wille
+
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
+
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
+
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
 
 #include <iostream>
 #include <stdlib.h>
@@ -14,15 +31,15 @@
 #include <vector>
 #include <gmp.h>
 #include <mpreal.h>
+#include <QASMsimulator.h>
 #include <queue>
 #include <chrono>
 #include <QMDDcore.h>
 #include <QMDDpackage.h>
 #include <QMDDcomplex.h>
 
-#include <simulator.h>
-#include <qasm_simulator.h>
-#include <QASM_scanner.hpp>
+#include <Simulator.h>
+//#include <QASMscanner.hpp>
 
 using mpfr::mpreal;
 
@@ -74,9 +91,9 @@ int main(int argc, char** argv) {
 	if (vm.count("simulate_qasm")) {
 		string fname = vm["simulate_qasm"].as<string>();
 		if(fname == "") {
-			simulator = new QasmSimulator(vm.count("display_statevector"), vm.count("display_probabilities"));
+			simulator = new QASMsimulator(vm.count("display_statevector"), vm.count("display_probabilities"));
 		} else {
-			simulator = new QasmSimulator(fname, vm.count("display_statevector"), vm.count("display_probabilities"));
+			simulator = new QASMsimulator(fname, vm.count("display_statevector"), vm.count("display_probabilities"));
 		}
 	} else {
 		cout << description << "\n";

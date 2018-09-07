@@ -14,7 +14,10 @@ char getch(FILE *infile)
   {
 // fetch one character / convert lowercase to uppercase
   char ch;
-  fscanf(infile,"%c",&ch);
+  int retval = fscanf(infile,"%c",&ch);
+  if(retval != 1) {
+	  return -1;
+  }
   if(ch==13){
     fscanf(infile,"%c",&ch);
   }

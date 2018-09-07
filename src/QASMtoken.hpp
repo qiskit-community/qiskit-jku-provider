@@ -23,32 +23,35 @@ by citing the following publication:
 }
 */
 
+#ifndef TOKEN_H_
+#define TOKEN_H_
 
-#ifndef QMDDcircuit_H
-#define QMDDcircuit_H
+#include <map>
 
-#include <stdio.h>
+class Token {
+ public:
 
-#include "QMDDpackage.h"
-#include "QMDDcomplex.h"
-#include "qcost.h"
-#include "textFileUtilities.h"
-#include <string.h>
-#include <iostream>
+	enum class Kind {include, none, identifier, number, plus, semicolon, eof, lpar, rpar, lbrack, rbrack, lbrace, rbrace, comma, minus, times, nninteger, real, qreg, creg, ugate, cxgate, gate, pi, measure, openqasm, probabilities, sin, cos, tan, exp, ln, sqrt, div, power, string, gt, barrier, opaque, _if, eq, reset, snapshot};
 
-/*****************************************************************
+	Token(Kind kind, int line, int col) {
+		this->kind = kind;
+		this->line = line;
+		this->col = col;
+		this->val = 0;
+		this->valReal = 0.0;
+	}
 
-    Routines            
-*****************************************************************/
+	Token() : Token(Kind::none, 0, 0) {
+	}
 
-int getlabel(char*,QMDDrevlibDescription,int*);
+	static std::map<Kind, std::string> KindNames;
+	Kind kind;
+	int line;
+	int col;
+	int val;
+	double valReal;
+	std::string str;
 
-QMDDedge QMDDreadGateFromString(char*, QMDDrevlibDescription*);
-QMDDedge QMDDreadGate(FILE*,QMDDrevlibDescription*);
-QMDDrevlibDescription QMDDrevlibHeader(FILE*);
-QMDDrevlibDescription QMDDcircuitRevlib(char *fname,QMDDrevlibDescription firstCirc,int match);
-// reads a circuit in Revlib format: http://www.revlib.org/documentation.php 
+ };
 
-
-/*******************************************************************************/
-#endif
+#endif /* TOKEN_H_ */

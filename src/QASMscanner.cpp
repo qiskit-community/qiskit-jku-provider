@@ -1,30 +1,42 @@
 /*
- * qasm_scanner.cpp
- *
- *  Created on: Jun 15, 2018
- *      Author: zulehner
- */
+DD-based simulator by JKU Linz, Austria
 
-/**
- * The Scanner for the MicroJava Compiler.
- */
+Developer: Alwin Zulehner, Robert Wille
 
-#include <QMDDcore.h>
-#include <QMDDpackage.h>
-#include <QMDDcomplex.h>
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
 
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
 
-#include <iostream>     // std::cout
-#include <fstream>      // std::ifstream
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
+
+#include <iostream>
+#include <fstream>
 #include <istream>
 #include <map>
 #include <wctype.h>
 #include <ctype.h>
 #include <sstream>
 
-#include <QASM_scanner.hpp>
+#include <QMDDcore.h>
+#include <QMDDpackage.h>
+#include <QMDDcomplex.h>
+#include <QASMscanner.hpp>
 
-QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
+QASMscanner::QASMscanner(std::istream& in_stream) : in(in_stream) {
         // initialize error handling support
         keywords["qreg"] = Token::Kind::qreg;
         keywords["creg"] = Token::Kind::creg;
@@ -53,7 +65,7 @@ QASM_scanner::QASM_scanner(std::istream& in_stream) : in(in_stream) {
         nextCh();
 }
 
-void QASM_scanner::addFileInput(std::string fname) {
+void QASMscanner::addFileInput(std::string fname) {
 	std::ifstream* in = new std::ifstream (fname, std::ifstream::in);
 	if(in->fail()) {
 		std::cerr << "Failed to open file '" << fname << "'!" << std::endl;
@@ -66,7 +78,7 @@ void QASM_scanner::addFileInput(std::string fname) {
 	nextCh();
 }
 
-void QASM_scanner::nextCh() {
+void QASMscanner::nextCh() {
 	if(!streams.empty() && streams.top()->eof()) {
 		delete streams.top();
 		streams.pop();
@@ -93,7 +105,7 @@ void QASM_scanner::nextCh() {
 	}
 }
 
-Token QASM_scanner::next() {
+Token QASMscanner::next() {
 	while(iswspace(ch)) {
 		nextCh();
     }
@@ -203,7 +215,7 @@ Token QASM_scanner::next() {
         return t;
     }
 
-void QASM_scanner::readString(Token& t) {
+void QASMscanner::readString(Token& t) {
     	std::stringstream ss;
         while(ch != '"') {
             ss << ch;
@@ -213,15 +225,15 @@ void QASM_scanner::readString(Token& t) {
         t.kind = Token::Kind::string;
     }
 
-void QASM_scanner::skipComment() {
+void QASMscanner::skipComment() {
 	while(ch != '\n' && ch != (char) -1) {
 		nextCh();
 	}
 }
 
-void QASM_scanner::readName(Token& t) {
+void QASMscanner::readName(Token& t) {
     	std::stringstream ss;
-        while(isdigit(ch) || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_') {
+        while(isdigit(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_') {
             ss << ch;
             nextCh();
         }
@@ -234,7 +246,7 @@ void QASM_scanner::readName(Token& t) {
         }
     }
 
-void QASM_scanner::readNumber(Token& t) {
+void QASMscanner::readNumber(Token& t) {
         std::stringstream ss;
         while(isdigit(ch)) {
             ss << ch;
@@ -254,7 +266,7 @@ void QASM_scanner::readNumber(Token& t) {
         	nextCh();
         }
         if(ch != 'e' && ch != 'E') {
-        	ss >> t.val_real;
+        	ss >> t.valReal;
         	return;
         }
         ss << ch;
@@ -267,7 +279,7 @@ void QASM_scanner::readNumber(Token& t) {
         	ss << ch;
         	nextCh();
         }
-        ss >> t.val_real;
+        ss >> t.valReal;
     }
 
 

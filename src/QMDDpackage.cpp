@@ -1,16 +1,27 @@
-/*********************************************
+/*
+DD-based simulator by JKU Linz, Austria
 
- QMDD package routines
+Developer: Alwin Zulehner, Robert Wille
 
- Michael Miller
- University of Victoria
- mmiller@cs.uvic.ca
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
 
- Date: July 2008
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
 
- extensions by Philipp Niemann, August-November 2012
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
 
- *********************************************/
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
 
 #define DEFINE_VARIABLES	// not only declare, but DEFINE global variables
 #include "QMDDpackage.h"
@@ -76,11 +87,11 @@ void QMDDdebugnode(QMDDnodeptr p)
 		printf("terminal\n");
 		return;
 	}
-	printf("Debug node %d\n", (intptr_t) p);
+	printf("Debug node %ld\n", (intptr_t) p);
 	printf("node v %d (%d) edges (w,p) ", (int) QMDDorder[p->v], (int) p->v);
 	for (i = 0; i < Nedge; i++) {
 		Cprint(p->e[i].w);
-		printf(" %d || ", (intptr_t) p->e[i].p);
+		printf(" %ld || ", (intptr_t) p->e[i].p);
 	}
 	printf("ref %d\n", p->ref);
 	//for(i=0;i<NEDGE;i++) QMDDdebugnode(p->e[i].p);
@@ -187,7 +198,7 @@ void QMDDprint(QMDDedge e, int limit)
 				}
 			}
 
-		printf("] %d\n", (intptr_t) pnext->p);
+		printf("] %ld\n", (intptr_t) pnext->p);
 		//printf("] \n");
 		i++;
 		if (i == limit) {
@@ -216,9 +227,6 @@ void QMDD2dot(QMDDedge e, int limit, std::ostream& oss,
 			<< "node [shape=circle, center=true]; " << std::endl;
 	nodes << "\"" << "T" << "\" " << "[ shape = box, label=\"" << "1" << "\" ];"
 			<< std::endl;
-	/* Funktionsweise:
-	 *
-	 *
 
 	 /* Define Nodes */
 	ListElementPtr first, q, lastq, pnext;
@@ -687,9 +695,9 @@ QMDDedge QMDDutLookup(QMDDedge e) {
 //  only normalized nodes shall be stored.
 
 	intptr_t key;
-	int i, j;
+	int i;
 	unsigned int v;
-	QMDDnodeptr lastp, p;
+	QMDDnodeptr p;
 
 	if (QMDDterminal(e)) // there is a unique terminal node
 			{
@@ -725,7 +733,7 @@ QMDDedge QMDDutLookup(QMDDedge e) {
 
 			if (p->renormFactor != COMPLEX_ONE) {
 				printf(
-						"Debug: table lookup found a node with active renormFactor with v=%d (id=%d).\n",
+						"Debug: table lookup found a node with active renormFactor with v=%d (id=%ld).\n",
 						p->v, (intptr_t) p);
 				if (p->ref != 0)
 					printf("was active!");
@@ -978,12 +986,12 @@ void QMDDradixPrint(int p, int n)
 QMDDedge CTlookup(QMDDedge a, QMDDedge b, CTkind which) {
 // Lookup a computation in the compute table
 // return NULL if not a match else returns result of prior computation
-	int i;
+	//int i;
 	QMDDedge r;
 
 	r.p = NULL;
 	CTlook[which]++;
-	i = CThash(a, b);
+	//i = CThash(a, b);
 
 	computeKey ck;
 	ck.a = a;
@@ -1031,14 +1039,15 @@ QMDDedge CTlookup(QMDDedge a, QMDDedge b, CTkind which) {
 	/*  if(CTable[i].which!=which) return(r);
 	 if(CTable[i].a.p!=a.p||CTable[i].a.w!=a.w) return(r);
 	 if(CTable[i].b.p!=b.p||CTable[i].b.w!=b.w) return(r);
-	 if((CTable[i].r.p)->v==-1) return(r);  /* fix */
-//  CThit[which]++;
-//  return(CTable[i].r);
+	 if((CTable[i].r.p)->v==-1) return(r);
+  	 CThit[which]++;
+  return(CTable[i].r);
+  */
 }
 
 void CTinsert(QMDDedge a, QMDDedge b, QMDDedge r, CTkind which) {
 // put an entry into the compute table
-	int i;
+	//int i;
 	computeKey ck;
 	ck.a = a;
 	ck.b = b;
@@ -1067,7 +1076,7 @@ int TThash(int n, int m, int t, int line[]) {
 	i = t;
 	for (j = 0; j < n; j++)
 		if (line[j] == 1)
-			i = i << 3 + j;
+			i = (i << 3) + j;
 	return (i & TTMASK);
 }
 
@@ -1075,7 +1084,7 @@ QMDDedge TTlookup(int n, int m, int t, int line[])
 // does not work with SIFTING!! Idea: TT should be initialized
 		{
 	QMDDedge r;
-	int i, j;
+	int i;
 	r.p = NULL;
 	i = TThash(n, m, t, line);
 	if (TTable[i].e.p == NULL || TTable[i].t != t || TTable[i].m != m
@@ -1088,7 +1097,7 @@ QMDDedge TTlookup(int n, int m, int t, int line[])
 }
 
 void TTinsert(int n, int m, int t, int line[], QMDDedge e) {
-	int i, j;
+	int i;
 	i = TThash(n, m, t, line);
 	TTable[i].n = n;
 	TTable[i].m = m;
@@ -1102,7 +1111,7 @@ void QMDDfillmat(uint64_t mat[MAXDIM][MAXDIM], QMDDedge a, int r, int c,
 // recursively scan an QMDD putting values in entries of mat
 // v is the variable index
 		{
-	int i, j, expand;
+	int i, expand;
 	QMDDedge e;
 
 	if (a.p == NULL)
@@ -1244,8 +1253,8 @@ void QMDDinit(int verbose) {
 	if (verbose) {
 		printf(QMDDversion);
 		printf("compiled: %s %s\n\n", __DATE__, __TIME__);
-		printf("Edge size %d bytes\n", sizeof(QMDDedge));
-		printf("Node size %d bytes\n",
+		printf("Edge size %ld bytes\n", sizeof(QMDDedge));
+		printf("Node size %ld bytes\n",
 				sizeof(QMDDnode) + Nedge * sizeof(QMDDedge));
 		printf(
 				"Max variables %d\nUT buckets / variable %d\nCompute table slots %d\nToffoli table slots %d\nGarbage collection limit %d\nGarbage collection increment %d\nComplex number table size %d\n",
@@ -1339,12 +1348,12 @@ QMDDedge QMDDadd(QMDDedge x, QMDDedge y)
 		return (r);
 	}
 
-	uint64_t xweight, yweight;
+	uint64_t xweight; //, yweight;
 	char newCT = 1;
 
 	if (newCT) {
 		xweight = x.w;
-		yweight = y.w;
+		//yweight = y.w;
 		x.w = COMPLEX_ONE;
 		y.w = Cdiv(y.w, xweight);
 	}
@@ -2059,15 +2068,15 @@ void QMDDstatistics(void)
 	printf("\nCurrent # nodes in unique tables: %ld\n\n", QMDDnodecount);
 	printf("Total compute table lookups: %ld\n",
 			CTlook[0] + CTlook[1] + CTlook[2]);
-	printf("Number of ops: adds %d mults %d Kronecker %d\n", Nop[add],
+	printf("Number of ops: adds %ld mults %ld Kronecker %ld\n", Nop[add],
 			Nop[mult], Nop[kronecker]);
 	printf(
-			"Compute table hit ratios: \naddition %d/%d %5.2f per cent \nmultiplication %d/%d %5.2f per cent \nKronecker product %d/%d %5.2f per ceent\n",
+			"Compute table hit ratios: \naddition %ld/%ld %5.2f per cent \nmultiplication %ld/%ld %5.2f per cent \nKronecker product %ld/%ld %5.2f per cent\n",
 			CThit[add], CTlook[add], (float) CThit[add] / CTlook[add] * 100,
 			CThit[mult], CTlook[mult], (float) CThit[mult] / CTlook[mult] * 100,
 			CThit[kronecker], CTlook[kronecker],
 			(float) CThit[kronecker] / CTlook[kronecker] * 100);
-	printf("UniqueTable Collisions: %d, Matches: %d\n", UTcol, UTmatch);
+	printf("UniqueTable Collisions: %ld, Matches: %ld\n", UTcol, UTmatch);
 
 }
 

@@ -1,17 +1,27 @@
-/***********************************************************************
+/*
+DD-based simulator by JKU Linz, Austria
 
-This file contains routines for constructing QMDD for gates and
-for reading reversible and quantum circuits in extended RevLib real 
-format.
+Developer: Alwin Zulehner, Robert Wille
 
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
 
-    Michael Miller
-    University of Victoria
-    mmiller@uvic.ca
-    
-    Date: October 2008
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
 
-***********************************************************************/
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
 
 #include "QMDDcircuit.h"
 
@@ -28,7 +38,7 @@ int getlabel(char lab[],QMDDrevlibDescription circ,int *cont)
 // this is a really quick and dirty implementation that uses
 // linear searching
 {
-  int i,k;
+  int i;
   char ch = lab[strlen(lab)-1]; // last character of lab
   
   
@@ -135,7 +145,7 @@ QMDDedge QMDDreadGateFromString(char *str, QMDDrevlibDescription *circ)
 
 
 			div *= sign;
-			if(VERBOSE) printf("divisor of R/Q gate: %d/%d\n", m,div);
+			//if(VERBOSE) printf("divisor of R/Q gate: %d/%d\n", m,div);
 		}
 
 
@@ -335,10 +345,10 @@ QMDDedge QMDDreadGate(FILE *infile,QMDDrevlibDescription *circ)
 
 QMDDrevlibDescription QMDDrevlibHeader(FILE *infile)
 {
-  int cont,header,n,p,i,j,k;
-  char cmd[MAXSTRLEN],tLabel[MAXSTRLEN],tInput[MAXSTRLEN];
+  int header,n,p,i;
+  char cmd[MAXSTRLEN]; //,tLabel[MAXSTRLEN],tInput[MAXSTRLEN];
   char ch,ch1;
-  CircuitLine temp;
+//  CircuitLine temp;
   QMDDrevlibDescription circ;
   
   circ.nancillary=circ.ngarbage=0;
@@ -441,8 +451,8 @@ QMDDrevlibDescription QMDDcircuitRevlib(char *fname,QMDDrevlibDescription firstC
 
 	QMDDrevlibDescription circ;
 
-	int first,i,j,k,p,t,line[MAXN],order[MAXN],invorder[MAXN];
-	char ch,tOutput[MAXSTRLEN],flag[MAXN],*cp,*cq,*cr;
+	int first,i,j; //,line[MAXN],order[MAXN],invorder[MAXN];
+	//char ch,tOutput[MAXSTRLEN],flag[MAXN],*cp,*cq,*cr;
 	CircuitLine tline;
 
 	QMDDedge e,f,olde;

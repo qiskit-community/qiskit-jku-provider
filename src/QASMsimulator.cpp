@@ -1,31 +1,49 @@
 /*
- * qasm_simulator.cpp
- *
- *  Created on: Jul 3, 2018
- *      Author: zulehner
- */
+DD-based simulator by JKU Linz, Austria
 
-#include "qasm_simulator.h"
+Developer: Alwin Zulehner, Robert Wille
 
-QasmSimulator::QasmSimulator(std::string filename, bool display_statevector, bool display_probabilities) {
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
+
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
+
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
+
+#include <QASMsimulator.h>
+
+QASMsimulator::QASMsimulator(std::string filename, bool display_statevector, bool display_probabilities) {
 	in = new std::ifstream (filename, std::ifstream::in);
-	this->scanner = new QASM_scanner(*this->in);
+	this->scanner = new QASMscanner(*this->in);
 	this->fname = filename;
 	this->display_probabilities = display_probabilities;
 	this->display_statevector = display_statevector;
 }
 
-QasmSimulator::QasmSimulator(bool display_statevector, bool display_probabilities) {
+QASMsimulator::QASMsimulator(bool display_statevector, bool display_probabilities) {
 	std::stringstream* in = new std::stringstream();
 	(*in) << std::cin.rdbuf();
 	this->in = in;
-	this->scanner = new QASM_scanner(*this->in);
+	this->scanner = new QASMscanner(*this->in);
 	this->fname = "";
 	this->display_probabilities = display_probabilities;
 	this->display_statevector = display_statevector;
 }
 
-QasmSimulator::~QasmSimulator() {
+QASMsimulator::~QASMsimulator() {
 	delete scanner;
 	delete in;
 
@@ -40,13 +58,13 @@ QasmSimulator::~QasmSimulator() {
 	}
 }
 
-void QasmSimulator::scan() {
+void QASMsimulator::scan() {
 	t = la;
 	la = scanner->next();
 	sym = la.kind;
 }
 
-void QasmSimulator::check(Token::Kind expected) {
+void QASMsimulator::check(Token::Kind expected) {
 	if (sym == expected) {
 		scan();
 	} else {
@@ -54,7 +72,7 @@ void QasmSimulator::check(Token::Kind expected) {
 	}
 }
 
-std::pair<int, int> QasmSimulator::QASMargumentQreg() {
+std::pair<int, int> QASMsimulator::QASMargumentQreg() {
 	check(Token::Kind::identifier);
 	std::string s = t.str;
 	if(qregs.find(s) == qregs.end()) {
@@ -71,7 +89,7 @@ std::pair<int, int> QasmSimulator::QASMargumentQreg() {
 	return std::make_pair(qregs[s].first, qregs[s].second);
 }
 
-std::pair<std::string, int> QasmSimulator::QASMargumentCreg() {
+std::pair<std::string, int> QASMsimulator::QASMargumentCreg() {
 	check(Token::Kind::identifier);
 	std::string s = t.str;
 	if(cregs.find(s) == cregs.end()) {
@@ -93,12 +111,12 @@ std::pair<std::string, int> QasmSimulator::QASMargumentCreg() {
 }
 
 
-QasmSimulator::Expr* QasmSimulator::QASMexponentiation() {
+QASMsimulator::Expr* QASMsimulator::QASMexponentiation() {
 	Expr* x;
 
 	if(sym == Token::Kind::real) {
 		scan();
-		return new Expr(Expr::Kind::number, NULL, NULL, t.val_real, "");
+		return new Expr(Expr::Kind::number, NULL, NULL, t.valReal, "");
 		//return mpreal(t.val_real);
 	} else if(sym == Token::Kind::nninteger) {
 		scan();
@@ -159,7 +177,7 @@ QasmSimulator::Expr* QasmSimulator::QASMexponentiation() {
 	return NULL;
 }
 
-QasmSimulator::Expr* QasmSimulator::QASMfactor() {
+QASMsimulator::Expr* QASMsimulator::QASMfactor() {
 	Expr* x;
 	Expr* y;
 	x = QASMexponentiation();
@@ -177,9 +195,9 @@ QasmSimulator::Expr* QasmSimulator::QASMfactor() {
 	return x;
 }
 
-QasmSimulator::Expr* QasmSimulator::QASMterm() {
-	QasmSimulator::Expr* x = QASMfactor();
-	QasmSimulator::Expr* y;
+QASMsimulator::Expr* QASMsimulator::QASMterm() {
+	QASMsimulator::Expr* x = QASMfactor();
+	QASMsimulator::Expr* y;
 
 	while(sym == Token::Kind::times || sym == Token::Kind::div) {
 		Token::Kind op = sym;
@@ -204,7 +222,7 @@ QasmSimulator::Expr* QasmSimulator::QASMterm() {
 	return x;
 }
 
-QasmSimulator::Expr* QasmSimulator::QASMexp() {
+QASMsimulator::Expr* QASMsimulator::QASMexp() {
 	Expr* x;
 	Expr* y;
 	if(sym == Token::Kind::minus) {
@@ -240,7 +258,7 @@ QasmSimulator::Expr* QasmSimulator::QASMexp() {
 	return x;
 }
 
-void QasmSimulator::QASMexpList(std::vector<Expr*>& expressions) {
+void QASMsimulator::QASMexpList(std::vector<Expr*>& expressions) {
 	Expr* x = QASMexp();
 	expressions.push_back(x);
 	while(sym == Token::Kind::comma) {
@@ -249,7 +267,7 @@ void QasmSimulator::QASMexpList(std::vector<Expr*>& expressions) {
 	}
 }
 
-void QasmSimulator::QASMargsList(std::vector<std::pair<int, int> >& arguments) {
+void QASMsimulator::QASMargsList(std::vector<std::pair<int, int> >& arguments) {
 	arguments.push_back(QASMargumentQreg());
 	while(sym == Token::Kind::comma) {
 		scan();
@@ -257,7 +275,7 @@ void QasmSimulator::QASMargsList(std::vector<std::pair<int, int> >& arguments) {
 	}
 }
 
-void QasmSimulator::QASMgate(bool execute) {
+void QASMsimulator::QASMgate(bool execute) {
 	if(sym == Token::Kind::ugate) {
 		scan();
 		check(Token::Kind::lpar);
@@ -368,7 +386,7 @@ void QasmSimulator::QASMgate(bool execute) {
 						size = it->second;
 					}
 				}
-				for(int i = 0; i < parameters.size(); i++) {
+				for(unsigned int i = 0; i < parameters.size(); i++) {
 					paramsMap[gateIt->second.parameterNames[i]] = parameters[i];
 				}
 
@@ -437,7 +455,7 @@ void QasmSimulator::QASMgate(bool execute) {
 	}
 }
 
-void QasmSimulator::Reset() {
+void QASMsimulator::Reset() {
 	Simulator::Reset();
 	qregs.clear();
 
@@ -448,7 +466,7 @@ void QasmSimulator::Reset() {
 	delete scanner;
 	in->clear();
 	in->seekg(0, in->beg);
-	this->scanner = new QASM_scanner(*this->in);
+	this->scanner = new QASMscanner(*this->in);
 
 	for(auto it = snapshots.begin(); it != snapshots.end(); it++) {
 		delete it->second;
@@ -456,7 +474,7 @@ void QasmSimulator::Reset() {
 	snapshots.clear();
 }
 
-void QasmSimulator::Simulate(int shots) {
+void QASMsimulator::Simulate(int shots) {
 	if(shots < 1) {
 		std::cerr << "Shots have to be greater than 0!" << std::endl;
 	}
@@ -546,7 +564,7 @@ void QasmSimulator::Simulate(int shots) {
 	std::cout << "}" << std::endl;
 }
 
-void QasmSimulator::QASMidList(std::vector<std::string>& identifiers) {
+void QASMsimulator::QASMidList(std::vector<std::string>& identifiers) {
 	check(Token::Kind::identifier);
 	identifiers.push_back(t.str);
 	while(sym == Token::Kind::comma) {
@@ -556,7 +574,7 @@ void QasmSimulator::QASMidList(std::vector<std::string>& identifiers) {
 	}
 }
 
-QasmSimulator::Expr* QasmSimulator::RewriteExpr(Expr* expr, std::map<std::string, Expr*>& exprMap) {
+QASMsimulator::Expr* QASMsimulator::RewriteExpr(Expr* expr, std::map<std::string, Expr*>& exprMap) {
 	if(expr == NULL) {
 		return NULL;
 	}
@@ -637,7 +655,7 @@ QasmSimulator::Expr* QasmSimulator::RewriteExpr(Expr* expr, std::map<std::string
 	return new Expr(expr->kind, op1, op2, expr->num, expr->id);
 }
 
-void QasmSimulator::QASMopaqueGateDecl() {
+void QASMsimulator::QASMopaqueGateDecl() {
 	check(Token::Kind::opaque);
 	check(Token::Kind::identifier);
 
@@ -659,7 +677,7 @@ void QasmSimulator::QASMopaqueGateDecl() {
 }
 
 
-void QasmSimulator::QASMgateDecl() {
+void QASMsimulator::QASMgateDecl() {
 	check(Token::Kind::gate);
 	check(Token::Kind::identifier);
 
@@ -717,12 +735,12 @@ void QasmSimulator::QASMgateDecl() {
 
 			CompoundGate g = compoundGates[name];
 			std::map<std::string, std::string> argsMap;
-			for(int i = 0; i < arguments.size(); i++) {
+			for(unsigned int i = 0; i < arguments.size(); i++) {
 				argsMap[g.argumentNames[i]] = arguments[i];
 			}
 
 			std::map<std::string, Expr*> paramsMap;
-			for(int i = 0; i < parameters.size(); i++) {
+			for(unsigned int i = 0; i < parameters.size(); i++) {
 				paramsMap[g.parameterNames[i]] = parameters[i];
 			}
 
@@ -774,7 +792,7 @@ void QasmSimulator::QASMgateDecl() {
 	check(Token::Kind::rbrace);
 }
 
-void QasmSimulator::printExpr(Expr* expr) {
+void QASMsimulator::printExpr(Expr* expr) {
 	if(expr->kind == Expr::Kind::number) {
 		std::cout << expr->num;
 	} else if(expr->kind == Expr::Kind::plus) {
@@ -830,7 +848,7 @@ void QasmSimulator::printExpr(Expr* expr) {
 	}
 }
 
-void QasmSimulator::QASMqop(bool execute) {
+void QASMsimulator::QASMqop(bool execute) {
 	if(sym == Token::Kind::ugate || sym == Token::Kind::cxgate || sym == Token::Kind::identifier) {
 		QASMgate(execute);
 	} else if(sym == Token::Kind::measure) {
@@ -872,7 +890,7 @@ void QasmSimulator::QASMqop(bool execute) {
 	}
 }
 
-void QasmSimulator::Simulate() {
+void QASMsimulator::Simulate() {
 
 	scan();
 	check(Token::Kind::openqasm);

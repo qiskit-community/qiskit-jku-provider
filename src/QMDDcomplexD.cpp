@@ -1,32 +1,27 @@
-/***************************************************************
+/*
+DD-based simulator by JKU Linz, Austria
 
-Complex number defnitions and routines for QMDD using
-doubles for the real and imaginary part of a complex number.
+Developer: Alwin Zulehner, Robert Wille
 
-January 28, 2008
-Michael Miller
-University of Victoria
-Victoria, BC 
-CANADA V8W 3P6
-mmiller@cs.uvic.ca
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
 
-****************************************************************/
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
 
-/****************************************************************
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
 
-The basic idea is that the required complex values are 
-stored in a lookup table.	
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
 
-The value 0 is always in slot 0 and the value 1 is always in slot
-1 so that for those two values the index corresponds to the value.
-
-Current implementation uses simple linear searching to find a value.
-
-QMDDinit (in QMDDpackage.c which is the initialization routine that
-must be called before the other package routines are used) invokes 
-QMDDinitCtable()
-
-*****************************************************************/
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
 
 #define DEFINE_COMPLEX_H_VARIABLES
 #include "QMDDcomplex.h"
@@ -319,8 +314,6 @@ void Cfree(complex& c) {
 void QMDDinitCtable(void)
 // initialize the complex value table and complex operation tables to empty
 {
-  int i,j;
-  
   Ctentries=0;
 
   if(VERBOSE) printf("\nDouble complex number package initialized\n\n");
@@ -362,7 +355,6 @@ void QMDDcomplexInit(void)
 void QMDDcvalue_table_list(void)
 // print the complex value table entries
 {
-  int i;
   
   printf("\nComplex value table: %d entries\n",Ctentries);
   std::cout << "index value Magnitude Angle 1) radian 2) degree" << std::endl;

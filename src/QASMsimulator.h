@@ -1,23 +1,41 @@
 /*
- * qasm_simulator.h
- *
- *  Created on: Jul 3, 2018
- *      Author: zulehner
- */
+DD-based simulator by JKU Linz, Austria
+
+Developer: Alwin Zulehner, Robert Wille
+
+With code from the QMDD implementation provided by Michael Miller (University of Victoria, Canada)
+and Philipp Niemann (University of Bremen, Germany).
+
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation
+
+If you have any questions feel free to contact us using
+alwin.zulehner@jku.at or robert.wille@jku.at
+
+If you use the quantum simulator for your research, we would be thankful if you referred to it
+by citing the following publication:
+
+@article{zulehner2018simulation,
+    title={Advanced Simulation of Quantum Computations},
+    author={Zulehner, Alwin and Wille, Robert},
+    journal={IEEE Transactions on Computer Aided Design of Integrated Circuits and Systems (TCAD)},
+    year={2018},
+    eprint = {arXiv:1707.00865}
+}
+*/
 
 #ifndef QASM_SIMULATOR_H_
 #define QASM_SIMULATOR_H_
 
-#include <simulator.h>
-#include <QASM_scanner.hpp>
-#include <QASM_token.hpp>
+#include <QASMscanner.hpp>
+#include <QASMtoken.hpp>
+#include <Simulator.h>
 #include <stack>
 
-class QasmSimulator : public Simulator {
+class QASMsimulator : public Simulator {
 public:
-	QasmSimulator(bool display_statevector, bool display_probabilities);
-	QasmSimulator(std::string fname, bool display_statevector, bool display_probabilities);
-	virtual ~QasmSimulator();
+	QASMsimulator(bool display_statevector, bool display_probabilities);
+	QASMsimulator(std::string fname, bool display_statevector, bool display_probabilities);
+	virtual ~QASMsimulator();
 
 	void Simulate();
 	void Simulate(int shots);
@@ -139,7 +157,7 @@ private:
 
 	std::string fname;
   	std::istream* in;
-	QASM_scanner* scanner;
+	QASMscanner* scanner;
 	std::map<std::string, std::pair<int ,int> > qregs;
 	std::map<std::string, std::pair<int, int*> > cregs;
 	std::pair<int, int> QASMargumentQreg();
@@ -147,7 +165,7 @@ private:
 	Expr* QASMexponentiation();
 	Expr* QASMfactor();
 	Expr* QASMterm();
-	QasmSimulator::Expr* QASMexp();
+	QASMsimulator::Expr* QASMexp();
 	void QASMgateDecl();
 	void QASMopaqueGateDecl();
 	void QASMgate(bool execute = true);
