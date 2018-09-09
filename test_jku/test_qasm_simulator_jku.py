@@ -34,7 +34,7 @@ from qiskit import ClassicalRegister
 from qiskit.wrapper import get_backend
 
 try:
-    pq_simulator = QasmSimulatorJKU()
+    pq_simulator = QasmSimulatorJKU(silent = True)
 except ImportError:
     _skip_class = True
 else:

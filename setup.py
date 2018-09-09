@@ -75,7 +75,7 @@ class BinaryDistribution(Distribution):
     
 setup(
     name="qiskit_addon_jku",
-    version="0.1.0",
+    version="0.3.0",
     author="QISKit Development Team",
     author_email="qiskit@us.ibm.com",
     description="QISKit simulator whose backend is based on JKU's simulator",

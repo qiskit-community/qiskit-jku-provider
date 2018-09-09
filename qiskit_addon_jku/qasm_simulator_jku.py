@@ -38,6 +38,10 @@ from qiskit.backends import BaseBackend
 from qiskit.backends.local.localjob import LocalJob
 from qiskit.backends.local._simulatorerror import SimulatorError
 
+RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
+Developer: Alwin Zulehner, Robert Wille
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation"""
+
 qelib1 = """gate u3(theta,phi,lambda) q { U(theta,phi,lambda) q; }
 gate u2(phi,lambda) q { U(pi/2,phi,lambda) q; }
 gate u1(lambda) q { U(0,0,lambda) q; }
@@ -69,11 +73,12 @@ gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 #this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
     """Converter to and from JKU's simulator"""
-    def __init__(self, exe=None):
+    def __init__(self, exe=None, silent = False):
         self.seed = 0
         self.shots = 1
         self.exec = exe
         self.additional_output_data = []
+        self.silent = silent
 
     def set_config(self, config):
         if 'data' in config: #additional output data specifications
@@ -94,6 +99,8 @@ class JKUSimulatorWrapper:
         if 'probabilities' in self.additional_output_data:
             cmd.append('--display_probabilities')
         #print("running command {}".format(" ".join(cmd)))
+        if not self.silent:
+            print(RUN_MESSAGE)
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
         #print("DONE running command {}".format(" ".join(cmd)))
         return output
@@ -268,7 +275,7 @@ class QasmSimulatorJKU(BaseBackend):
         "basis_gates": 'u0,u1,u2,u3,cx,x,y,z,h,s,t,snapshot'
     }
 
-    def __init__(self, configuration=None):
+    def __init__(self, configuration=None, silent = False):
         """
         Args:
             configuration (dict): backend configuration
@@ -289,6 +296,8 @@ class QasmSimulatorJKU(BaseBackend):
             raise FileNotFoundError('Simulator executable not found (using %s)' %
                                     self._configuration.get('exe', 'default locations'))
 
+        self.silent = silent
+
     def run(self, qobj):
         return LocalJob(self._run_job, qobj)
 
@@ -296,7 +305,7 @@ class QasmSimulatorJKU(BaseBackend):
         """Run circuits in q_job"""
         result_list = []
         self._validate(qobj)
-        s = JKUSimulatorWrapper(self._configuration['exe'])
+        s = JKUSimulatorWrapper(self._configuration['exe'], silent = self.silent)
         #self._shots = qobj['config']['shots']
         s.shots = qobj['config']['shots']
         start = time.time()
