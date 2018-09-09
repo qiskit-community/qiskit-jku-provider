@@ -172,6 +172,8 @@ class JKUSimulatorWrapper:
         translation_table = [0] * 2**qubits #QISKit qubit order is reversed, so we fix accordingly
         for n in range(2**qubits):
             translation_table[n] = int(bin(n)[2:].rjust(qubits,'0')[::-1],2)
+        if 'counts' in result:
+            result['counts'] = self.convert_counts(result['counts'], measurement_data)
         if 'snapshots' in result:
             for snapshot_key, snapshot_data in result['snapshots'].items():
                 result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
@@ -198,13 +200,8 @@ class JKUSimulatorWrapper:
     
     def convert_probabilities_ket(self, probs_ket_data):
         return dict([(key[::-1], value) for key,value in probs_ket_data.items()])
-        
-        
-    def parse_counts(self, run_output, measurement_data):
-        count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
-        counts_string = re.search(count_regex, run_output).group(1)
-        counts_string = counts_string.replace('\r', '').replace('\n', '').replace("'", '"')
-        counts = json.loads(counts_string)
+
+    def convert_counts(self, counts, measurement_data):
         result = {}
         for qubits, count in counts.items():
             clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]

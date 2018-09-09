@@ -74,6 +74,20 @@ class TestQasmSimulatorJKU(QiskitTestCase):
             random_circuits.add_circuits(1, basis=basis)
         cls.rqg = random_circuits
 
+    def run_on_simulators(self, qc, pq_simulator, qk_simulator, shots, seed):
+        job_pq = execute(qc, pq_simulator, shots=shots, seed=seed)
+        job_qk = execute(qc, qk_simulator, shots=shots, seed=seed)
+        result_pq = job_pq.result()
+        result_qk = job_qk.result()
+        counts_pq = result_pq.get_counts(result_pq.get_names()[0])
+        counts_qk = result_qk.get_counts(result_qk.get_names()[0])
+        states = counts_qk.keys() | counts_pq.keys()
+        # contingency table
+        ctable = numpy.array([[counts_pq.get(key, 0) for key in states],
+                              [counts_qk.get(key, 0) for key in states]])
+        result = chi2_contingency(ctable)
+        return (counts_pq, counts_qk, result)
+
     def test_gate_x(self):
         shots = 100
         qr = QuantumRegister(1)
@@ -105,6 +119,31 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         for key, _ in counts.items():
             with self.subTest(key=key):
                 self.assertTrue(key in ['0' * N, '1' * N])
+
+    def test_output_style(self):
+        qk_simulator = get_backend('local_qasm_simulator')
+
+        qr = QuantumRegister(2)
+        cr = ClassicalRegister(2)
+        qc = QuantumCircuit(qr, cr, name='test_output_order')
+        qc.h(qr[0])
+        qc.measure(qr[0], cr[0])
+        qc.measure(qr[1], cr[1])
+        shots = 100
+
+        counts_pq, counts_qk, result = self.run_on_simulators(qc, pq_simulator, qk_simulator, shots=shots, seed=1)
+        self.assertGreater(result[1], 0.01)
+
+        cr1 = ClassicalRegister(1)
+        cr2 = ClassicalRegister(1)
+        qc = QuantumCircuit(qr, cr1, cr2, name='test_output_separation')
+        qc.h(qr[0])
+        qc.measure(qr[0], cr1[0])
+        qc.measure(qr[1], cr2[0])
+
+        counts_pq, counts_qk, result = self.run_on_simulators(qc, pq_simulator, qk_simulator, shots=shots, seed=1)
+        self.log.info('chi2_contingency: %s', str(result))
+        self.assertGreater(result[1], 0.01)
 
     def test_random_circuits(self):
         qk_simulator = get_backend('local_qasm_simulator')
