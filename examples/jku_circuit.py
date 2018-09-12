@@ -42,7 +42,7 @@ def use_jku_backend():
     qc.snapshot(1)
     config = {"data": ['probabilities', 'probabilities_ket']}
     result = execute(qc, backend='local_statevector_simulator_jku', shots=1, config=config).result()
-    print(result._result)
+    print(result.get_data())
 
 if __name__ == "__main__":
     use_jku_backend()
