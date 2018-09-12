@@ -33,10 +33,13 @@ import re
 import subprocess
 from collections import OrderedDict, Counter
 import numpy as np
-from qiskit._result import Result
+
 from qiskit.backends import BaseBackend
 from qiskit.backends.local.localjob import LocalJob
 from qiskit.backends.local._simulatorerror import SimulatorError
+from qiskit.qobj import qobj_to_dict
+from qiskit.result._utils import result_from_old_style_dict
+
 
 RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
 Developer: Alwin Zulehner, Robert Wille
@@ -160,7 +163,8 @@ class JKUSimulatorWrapper:
         output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time,
                        'seed': self.seed, 'shots': self.shots,
-                       'data': output_data}
+                       'data': output_data,
+                       'success': True}
         if 'name' in qobj_circuit:
             result_dict['name'] = qobj_circuit['name']
         return result_dict
@@ -296,28 +300,35 @@ class QasmSimulatorJKU(BaseBackend):
         self.silent = silent
 
     def run(self, qobj):
-        return LocalJob(self._run_job, qobj)
+        local_job = LocalJob(self._run_job, qobj)
+        local_job.submit()
+        return local_job
 
     def _run_job(self, qobj):
         """Run circuits in q_job"""
         result_list = []
         self._validate(qobj)
+
+        qobj_old_format = qobj_to_dict(qobj, version='0.0.1')
+
         s = JKUSimulatorWrapper(self._configuration['exe'], silent = self.silent)
         #self._shots = qobj['config']['shots']
-        s.shots = qobj['config']['shots']
+        s.shots = qobj_old_format['config']['shots']
         start = time.time()
-        for circuit in qobj['circuits']:
+        for circuit in qobj_old_format['circuits']:
             result_list.append(s.run_on_qobj_circuit(circuit))
         end = time.time()
         job_id = str(uuid.uuid4())
         result = {'backend': self._configuration['name'],
-                  'id': qobj['id'],
+                  'id': qobj_old_format['id'],
                   'job_id': job_id,
                   'result': result_list,
                   'status': 'COMPLETED',
                   'success': True,
                   'time_taken': (end - start)}
-        return Result(result)
+        return result_from_old_style_dict(
+            result,
+            [circuit.header.name for circuit in qobj.experiments])
 
     def _validate(self, qobj):
         #for now, JKU should be ran with shots = 1 and no measurement gates
