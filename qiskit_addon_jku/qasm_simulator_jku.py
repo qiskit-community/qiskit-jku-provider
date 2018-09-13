@@ -94,9 +94,9 @@ class JKUSimulatorWrapper:
     def run(self, filename):
         """performs the actual external call to the JKU exe"""
         cmd = [self.exec,
-               '--simulate_qasm', filename,
-               '--seed', str(self.seed),
-               '--shots', str(self.shots),
+               '--simulate_qasm={}'.format(filename),
+               '--seed={}'.format(self.seed),
+               '--shots={}'.format(self.shots),
                '--display_statevector',
               ]
         if 'probabilities' in self.additional_output_data:
