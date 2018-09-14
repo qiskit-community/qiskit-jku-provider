@@ -74,7 +74,7 @@ class BinaryDistribution(Distribution):
         return True
     
 setup(
-    name="qiskit_addon_jku",
+    name="qiskit-addon-jku",
     version="0.3.0",
     author="QISKit Development Team",
     author_email="qiskit@us.ibm.com",
@@ -94,9 +94,9 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering",
     ],
-    install_requires=['qiskit>=0.5'],
+    install_requires=['qiskit>=0.6,<0.7'],
     keywords="qiskit quantum jku_simulator",
-    packages=find_packages(exclude=['test*']),
+    packages=['qiskit.backends.jku'],
     include_package_data=True,
     cmdclass={
         'build': JKUSimulatorBuild,
