@@ -1,4 +1,4 @@
-include qiskit_addon_jku/jku_simulator
+include qiskit/backends/jku/jku_simulator
 recursive-include src *
 recursive-include cmake *
 include CMakeLists.txt
