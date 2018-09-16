@@ -36,6 +36,6 @@ class JKUProvider(BaseProvider):
         filters = filters or {}
         for key, value in filters.items():
             backends = {name: instance for name, instance in backends.items()
-                        if instance.configuration.get(key) == value}
+                        if instance.configuration().get(key) == value}
 
         return list(backends.values())
