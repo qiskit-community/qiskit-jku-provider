@@ -230,6 +230,8 @@ QASMsimulator::Expr* QASMsimulator::QASMexp() {
 		x = QASMterm();
 		if(x->kind == Expr::Kind::number) {
 			x->num = -x->num;
+		} else {
+			x = new Expr(Expr::Kind::sign, x, NULL, 0, "");
 		}
 	} else {
 		x = QASMterm();
