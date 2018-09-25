@@ -1,21 +1,9 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name,missing-docstring,broad-except
 
-# Copyright 2017 IBM RESEARCH. All Rights Reserved.
+# Copyright 2018, IBM.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# =============================================================================
+# This source code is licensed under the Apache License, Version 2.0 found in
+# the LICENSE.txt file in the root directory of this source tree.
 
 from test_utils._random_circuit_generator import RandomCircuitGenerator
 from test_utils.common import QiskitTestCase
@@ -26,15 +14,15 @@ import unittest
 import numpy
 from scipy.stats import chi2_contingency
 
-from qiskit_addon_jku import QasmSimulatorJKU
 from qiskit import execute
 from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
 from qiskit import ClassicalRegister
 from qiskit.wrapper import get_backend
+from qiskit.backends.jku import QasmSimulatorJKU
 
 try:
-    pq_simulator = QasmSimulatorJKU()
+    pq_simulator = QasmSimulatorJKU(silent = True)
 except ImportError:
     _skip_class = True
 else:
@@ -74,6 +62,20 @@ class TestQasmSimulatorJKU(QiskitTestCase):
             random_circuits.add_circuits(1, basis=basis)
         cls.rqg = random_circuits
 
+    def run_on_simulators(self, qc, pq_simulator, qk_simulator, shots, seed):
+        job_pq = execute(qc, pq_simulator, shots=shots, seed=seed)
+        job_qk = execute(qc, qk_simulator, shots=shots, seed=seed)
+        result_pq = job_pq.result()
+        result_qk = job_qk.result()
+        counts_pq = result_pq.get_counts(result_pq.get_names()[0])
+        counts_qk = result_qk.get_counts(result_qk.get_names()[0])
+        states = counts_qk.keys() | counts_pq.keys()
+        # contingency table
+        ctable = numpy.array([[counts_pq.get(key, 0) for key in states],
+                              [counts_qk.get(key, 0) for key in states]])
+        result = chi2_contingency(ctable)
+        return (counts_pq, counts_qk, result)
+
     def test_gate_x(self):
         shots = 100
         qr = QuantumRegister(1)
@@ -105,6 +107,31 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         for key, _ in counts.items():
             with self.subTest(key=key):
                 self.assertTrue(key in ['0' * N, '1' * N])
+
+    def test_output_style(self):
+        qk_simulator = get_backend('local_qasm_simulator')
+
+        qr = QuantumRegister(2)
+        cr = ClassicalRegister(2)
+        qc = QuantumCircuit(qr, cr, name='test_output_order')
+        qc.h(qr[0])
+        qc.measure(qr[0], cr[0])
+        qc.measure(qr[1], cr[1])
+        shots = 100
+
+        counts_pq, counts_qk, result = self.run_on_simulators(qc, pq_simulator, qk_simulator, shots=shots, seed=1)
+        self.assertGreater(result[1], 0.01)
+
+        cr1 = ClassicalRegister(1)
+        cr2 = ClassicalRegister(1)
+        qc = QuantumCircuit(qr, cr1, cr2, name='test_output_separation')
+        qc.h(qr[0])
+        qc.measure(qr[0], cr1[0])
+        qc.measure(qr[1], cr2[0])
+
+        counts_pq, counts_qk, result = self.run_on_simulators(qc, pq_simulator, qk_simulator, shots=shots, seed=1)
+        self.log.info('chi2_contingency: %s', str(result))
+        self.assertGreater(result[1], 0.01)
 
     def test_random_circuits(self):
         qk_simulator = get_backend('local_qasm_simulator')

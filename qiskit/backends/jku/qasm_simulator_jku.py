@@ -1,20 +1,9 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=unused-import
 
-# Copyright 2017 IBM RESEARCH. All Rights Reserved.
+# Copyright 2018, IBM.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
+# This source code is licensed under the Apache License, Version 2.0 found in
+# the LICENSE.txt file in the root directory of this source tree.
 
 """Backend for the JKU C++ simulator."""
 
@@ -33,10 +22,17 @@ import re
 import subprocess
 from collections import OrderedDict, Counter
 import numpy as np
-from qiskit._result import Result
+
 from qiskit.backends import BaseBackend
 from qiskit.backends.local.localjob import LocalJob
 from qiskit.backends.local._simulatorerror import SimulatorError
+from qiskit.qobj import qobj_to_dict
+from qiskit.result._utils import result_from_old_style_dict
+
+
+RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
+Developer: Alwin Zulehner, Robert Wille
+For more information, please visit http://iic.jku.at/eda/research/quantum_simulation"""
 
 qelib1 = """gate u3(theta,phi,lambda) q { U(theta,phi,lambda) q; }
 gate u2(phi,lambda) q { U(pi/2,phi,lambda) q; }
@@ -69,11 +65,12 @@ gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 #this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
     """Converter to and from JKU's simulator"""
-    def __init__(self, exe=None):
+    def __init__(self, exe=None, silent = False):
         self.seed = 0
         self.shots = 1
         self.exec = exe
         self.additional_output_data = []
+        self.silent = silent
 
     def set_config(self, config):
         if 'data' in config: #additional output data specifications
@@ -86,14 +83,16 @@ class JKUSimulatorWrapper:
     def run(self, filename):
         """performs the actual external call to the JKU exe"""
         cmd = [self.exec,
-               '--simulate_qasm', filename,
-               '--seed', str(self.seed),
-               '--shots', str(self.shots),
+               '--simulate_qasm={}'.format(filename),
+               '--seed={}'.format(self.seed),
+               '--shots={}'.format(self.shots),
                '--display_statevector',
               ]
         if 'probabilities' in self.additional_output_data:
             cmd.append('--display_probabilities')
         #print("running command {}".format(" ".join(cmd)))
+        if not self.silent:
+            print(RUN_MESSAGE)
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
         #print("DONE running command {}".format(" ".join(cmd)))
         return output
@@ -153,7 +152,8 @@ class JKUSimulatorWrapper:
         output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time,
                        'seed': self.seed, 'shots': self.shots,
-                       'data': output_data}
+                       'data': output_data,
+                       'success': True}
         if 'name' in qobj_circuit:
             result_dict['name'] = qobj_circuit['name']
         return result_dict
@@ -165,6 +165,8 @@ class JKUSimulatorWrapper:
         translation_table = [0] * 2**qubits #QISKit qubit order is reversed, so we fix accordingly
         for n in range(2**qubits):
             translation_table[n] = int(bin(n)[2:].rjust(qubits,'0')[::-1],2)
+        if 'counts' in result:
+            result['counts'] = self.convert_counts(result['counts'], measurement_data)
         if 'snapshots' in result:
             for snapshot_key, snapshot_data in result['snapshots'].items():
                 result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
@@ -191,13 +193,8 @@ class JKUSimulatorWrapper:
     
     def convert_probabilities_ket(self, probs_ket_data):
         return dict([(key[::-1], value) for key,value in probs_ket_data.items()])
-        
-        
-    def parse_counts(self, run_output, measurement_data):
-        count_regex = re.compile("'counts': ({[^}]*})", re.DOTALL)
-        counts_string = re.search(count_regex, run_output).group(1)
-        counts_string = counts_string.replace('\r', '').replace('\n', '').replace("'", '"')
-        counts = json.loads(counts_string)
+
+    def convert_counts(self, counts, measurement_data):
         result = {}
         for qubits, count in counts.items():
             clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
@@ -248,7 +245,7 @@ EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 DEFAULT_SIMULATOR_PATHS = [
     # This is the path where Makefile creates the simulator by default
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '../build/jku_simulator'
+                                 '../../../build/jku_simulator'
                                  + EXTENSION)),
     # This is the path where PIP installs the simulator
     os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -268,7 +265,7 @@ class QasmSimulatorJKU(BaseBackend):
         "basis_gates": 'u0,u1,u2,u3,cx,x,y,z,h,s,t,snapshot'
     }
 
-    def __init__(self, configuration=None):
+    def __init__(self, configuration=None, silent = False):
         """
         Args:
             configuration (dict): backend configuration
@@ -289,29 +286,38 @@ class QasmSimulatorJKU(BaseBackend):
             raise FileNotFoundError('Simulator executable not found (using %s)' %
                                     self._configuration.get('exe', 'default locations'))
 
+        self.silent = silent
+
     def run(self, qobj):
-        return LocalJob(self._run_job, qobj)
+        local_job = LocalJob(self._run_job, qobj)
+        local_job.submit()
+        return local_job
 
     def _run_job(self, qobj):
         """Run circuits in q_job"""
         result_list = []
         self._validate(qobj)
-        s = JKUSimulatorWrapper(self._configuration['exe'])
+
+        qobj_old_format = qobj_to_dict(qobj, version='0.0.1')
+
+        s = JKUSimulatorWrapper(self._configuration['exe'], silent = self.silent)
         #self._shots = qobj['config']['shots']
-        s.shots = qobj['config']['shots']
+        s.shots = qobj_old_format['config']['shots']
         start = time.time()
-        for circuit in qobj['circuits']:
+        for circuit in qobj_old_format['circuits']:
             result_list.append(s.run_on_qobj_circuit(circuit))
         end = time.time()
         job_id = str(uuid.uuid4())
         result = {'backend': self._configuration['name'],
-                  'id': qobj['id'],
+                  'id': qobj_old_format['id'],
                   'job_id': job_id,
                   'result': result_list,
                   'status': 'COMPLETED',
                   'success': True,
                   'time_taken': (end - start)}
-        return Result(result)
+        return result_from_old_style_dict(
+            result,
+            [circuit.header.name for circuit in qobj.experiments])
 
     def _validate(self, qobj):
         #for now, JKU should be ran with shots = 1 and no measurement gates
