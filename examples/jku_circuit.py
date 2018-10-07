@@ -10,7 +10,7 @@ Example use of the JKU backend
 """
 
 import os
-from qiskit.backends.jku import JKUProvider
+from qiskit_addon_jku import JKUProvider
 from qiskit.extensions.simulator import snapshot
 
 from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, execute
@@ -22,6 +22,7 @@ def use_jku_backend():
     qubits_num = 3
     qr = QuantumRegister(qubits_num)
     cr = ClassicalRegister(qubits_num)
+
     qc = QuantumCircuit(qr, cr)
     qc.h(qr[0])
     qc.cx(qr[0], qr[1])

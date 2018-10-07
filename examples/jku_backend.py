@@ -10,7 +10,7 @@ Example use of the JKU backend
 """
 
 import os,sys
-from qiskit.backends.jku import JKUProvider
+from qiskit_addon_jku import JKUProvider
 
 from qiskit import execute, load_qasm_file
 from qiskit.wrapper._wrapper import _DEFAULT_PROVIDER
