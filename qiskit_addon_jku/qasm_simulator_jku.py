@@ -24,8 +24,8 @@ from collections import OrderedDict, Counter
 import numpy as np
 
 from qiskit.backends import BaseBackend
-from qiskit.backends.local.localjob import LocalJob
-from qiskit.backends.local._simulatorerror import SimulatorError
+from qiskit.backends.aer import AerJob
+from qiskit.backends.aer._simulatorerror import SimulatorError
 from qiskit.qobj import qobj_to_dict
 from qiskit.result._utils import result_from_old_style_dict
 
@@ -245,7 +245,7 @@ EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 DEFAULT_SIMULATOR_PATHS = [
     # This is the path where Makefile creates the simulator by default
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '../../../build/jku_simulator'
+                                 '../build/jku_simulator'
                                  + EXTENSION)),
     # This is the path where PIP installs the simulator
     os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -283,17 +283,19 @@ class QasmSimulatorJKU(BaseBackend):
                 path for path in paths if (os.path.exists(path) and
                                            os.path.getsize(path) > 100))
         except StopIteration:
+            print(paths)
             raise FileNotFoundError('Simulator executable not found (using %s)' %
                                     self._configuration.get('exe', 'default locations'))
 
         self.silent = silent
 
     def run(self, qobj):
-        local_job = LocalJob(self._run_job, qobj)
+        job_id = str(uuid.uuid4())
+        local_job = AerJob(self, job_id, self._run_job, qobj)
         local_job.submit()
         return local_job
 
-    def _run_job(self, qobj):
+    def _run_job(self, job_id, qobj):
         """Run circuits in q_job"""
         result_list = []
         self._validate(qobj)
@@ -307,7 +309,6 @@ class QasmSimulatorJKU(BaseBackend):
         for circuit in qobj_old_format['circuits']:
             result_list.append(s.run_on_qobj_circuit(circuit))
         end = time.time()
-        job_id = str(uuid.uuid4())
         result = {'backend': self._configuration['name'],
                   'id': qobj_old_format['id'],
                   'job_id': job_id,

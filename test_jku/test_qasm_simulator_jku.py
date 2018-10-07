@@ -19,7 +19,7 @@ from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
 from qiskit import ClassicalRegister
 from qiskit.wrapper import get_backend
-from qiskit.backends.jku import QasmSimulatorJKU
+from qiskit_addon_jku import QasmSimulatorJKU
 
 try:
     pq_simulator = QasmSimulatorJKU(silent = True)

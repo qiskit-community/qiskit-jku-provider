@@ -13,15 +13,15 @@ import os,sys
 from qiskit_addon_jku import JKUProvider
 
 from qiskit import execute, load_qasm_file
-from qiskit.wrapper._wrapper import _DEFAULT_PROVIDER
 
-_DEFAULT_PROVIDER.add_provider(JKUProvider())
+
+
 RUNDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 def use_jku_backend():
     q_circuit = load_qasm_file(RUNDIR  + '/ghz.qasm')
-   
-    result = execute(q_circuit, backend='local_statevector_simulator_jku', shots=100).result()
+    jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
+    result = execute(q_circuit, backend=jku_backend, shots=100).result()
     print("counts: ")
     print(result.get_counts(q_circuit))
 

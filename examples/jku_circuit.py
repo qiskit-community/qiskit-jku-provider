@@ -14,9 +14,6 @@ from qiskit_addon_jku import JKUProvider
 from qiskit.extensions.simulator import snapshot
 
 from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, execute
-from qiskit.wrapper._wrapper import _DEFAULT_PROVIDER
-
-_DEFAULT_PROVIDER.add_provider(JKUProvider())
 
 def use_jku_backend():
     qubits_num = 3
@@ -32,7 +29,8 @@ def use_jku_backend():
     qc.measure(qr[2], cr[2])
     qc.snapshot(1)
     config = {"data": ['probabilities', 'probabilities_ket']}
-    result = execute(qc, backend='local_statevector_simulator_jku', shots=1, config=config).result()
+    jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
+    result = execute(qc, backend=jku_backend, shots=1, config=config).result()
     print(result.get_data())
 
 if __name__ == "__main__":
