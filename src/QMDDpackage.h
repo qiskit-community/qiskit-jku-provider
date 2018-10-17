@@ -56,7 +56,7 @@ by citing the following publication:
 #define DYNREORDERLIMIT 500	// minimum value for dynamic reordering limit
 #define VERBOSE 0
 
-#include <stdint.h>
+//#include <stdint.h>
 #include <iostream>
 #include "QMDDcomplex.h"
 #include <sstream>
@@ -65,7 +65,9 @@ by citing the following publication:
 #include <stdlib.h>
 #include <string.h>
 #include <unordered_map>
-#include <stdint.h>
+
+#include <cstdint>
+//#include <stdint.h>
 
 // edge and node definitions 
 
@@ -315,7 +317,7 @@ int MultMode = 0;			// set to 1 for matrix - vector multiplication
 
 int RenormalizationNodeCount = 0;	// number of active nodes that need renormalization (used in QMDDdecref) 
 int blockMatrixCounter = 0;	        // number of active nodes that represent block matrices (used in QMDDincref, QMDDdecref)
-int globalComputeSpecialMatricesFlag = 1; // default value for computeSpecialMatricesFlag of newly created nodes (used in QMDDmakeNonterminal)
+char globalComputeSpecialMatricesFlag = 1; // default value for computeSpecialMatricesFlag of newly created nodes (used in QMDDmakeNonterminal)
 int dynamicReorderingTreshold = DYNREORDERLIMIT;
 
 int largestRefCount = 0;

@@ -27,14 +27,15 @@ by citing the following publication:
 #ifndef QMDDcomplex_H
 #define QMDDcomplex_H
 
+#include <mpreal.h>
 #include <gmp.h>
 #include <mpfr.h>
 #include <unordered_map>
 #include <map>
 #include <set>
 #include <vector>
-#include <mpreal.h>
-#include <stdint.h>
+
+//#include <stdint.h>
 
 
 
