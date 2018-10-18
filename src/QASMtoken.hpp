@@ -27,6 +27,7 @@ by citing the following publication:
 #define TOKEN_H_
 
 #include <map>
+#include <string>
 
 class Token {
  public:
