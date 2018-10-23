@@ -3,17 +3,21 @@ project(jku_simulator LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
-    
+
 # Set default build type to Release
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE Release CACHE STRING
 		"Choose the type of build, options are: Debug Release"
 		FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
+ENDIF()
 
-SET(CMAKE_CXX_FLAGS "-D_REENTRANT -DVERSION=\"$(VERSION)\"")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_REENTRANT -DVERSION=\"$(VERSION)\"")
 
 IF(STATIC_LINKING)
+    IF(NOT APPLE)
+        SET(CMAKE_CXX_FLAGS
+                "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
+    ENDIF()
     SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
     IF(WIN32)
         SET(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
@@ -34,26 +38,30 @@ FIND_PACKAGE(MPFR REQUIRED)
 FIND_PACKAGE(MPFR++ REQUIRED)
 INCLUDE_DIRECTORIES(${MPFR_INCLUDE_DIRS})
 
-SET(LIBS ${LIBS} ${MPFR_LIBRARIES} ${Boost_LIBRARIES})
-message("JUAN: ${LIBS}")
+SET(JKU_LIBS ${MPFR_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(jku_simulator
     src/main.cpp
     src/Simulator.cpp
     src/QASMsimulator.cpp
     src/QASMscanner.cpp
-    src/QASMtoken.cpp 
-    src/QMDDpackage.cpp 
-    src/textFileUtilities.cpp 
-    src/qcost.cpp 
-    src/timing.cpp  
-    src/QMDDcircuit.cpp 
-    src/QMDDcomplexD.cpp 
+    src/QASMtoken.cpp
+    src/QMDDpackage.cpp
+    src/textFileUtilities.cpp
+    src/qcost.cpp
+    src/timing.cpp
+    src/QMDDcircuit.cpp
+    src/QMDDcomplexD.cpp
     src/QMDDreorder.cpp)
 
 set_target_properties(jku_simulator PROPERTIES
 	LINKER_LANGUAGE CXX
-    CXX_STANDARD 14)
+    CXX_STANDARD 14
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG Debug
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE Release)
 
+message("LIBS: ${JKU_LIBS}")
+
+target_link_libraries(jku_simulator ${JKU_LIBS})
 include_directories(src)
-target_link_libraries(jku_simulator ${LIBS})
+
