@@ -13,6 +13,7 @@ SET target=%~n1
 IF "%target%"=="lint" GOTO :lint
 IF "%target%"=="test" GOTO :test
 IF "%target%"=="profile" GOTO :profile
+IF "%target%"=="dist" GOTO :dist
 
 :usage
 ECHO.
@@ -35,6 +36,14 @@ GOTO :next
 
 :profile
 python -m unittest discover -p "profile*.py" -v
+IF errorlevel 9009 GOTO :error
+GOTO :next
+
+:dist
+FOR %%A IN (py34_64 py35_64 py36_64 py37_64 py34_32 py35_32 py36_32 py37_32) DO (
+  activate %%A
+  python setup.py bdist_wheel
+)
 IF errorlevel 9009 GOTO :error
 GOTO :next
 
