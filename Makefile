@@ -2,11 +2,11 @@
 #
 # This source code is licensed under the Apache License, Version 2.0 found in
 # the LICENSE.txt file in the root directory of this source tree.
-
-.PHONY: sim style lint test profile
+SHELL := /bin/bash
+.PHONY: sim style lint test profile dist
 
 sim:
-	cmake . -Bbuild
+	cmake . -Bbuild -DSTATIC_LINKING=True
 	make -C build
 # Ignoring generated ones with .py extension.
 lint:
@@ -23,3 +23,8 @@ test:
 profile:
 	python3 -m unittest discover -p "profile*.py" -v
 
+dist:
+	for env in py37 py36 py35 py34 ; do \
+		source activate $$env ; \
+		python setup.py bdist_wheel ; \
+	done
