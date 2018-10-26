@@ -15,12 +15,11 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_REENTRANT -DVERSION=\"$(VERSION)\"")
 
 IF(STATIC_LINKING)
     IF(NOT APPLE)
-        SET(CMAKE_CXX_FLAGS
-                "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
+        SET(CMAKE_EXE_LINKER_FLAGS "-static -static-libgcc -static-libstdc++")
     ENDIF()
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     IF(WIN32)
-        SET(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        LIST(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .lib .a)
     ENDIF()
 ENDIF()
 
@@ -38,7 +37,9 @@ FIND_PACKAGE(MPFR REQUIRED)
 FIND_PACKAGE(MPFR++ REQUIRED)
 INCLUDE_DIRECTORIES(${MPFR_INCLUDE_DIRS})
 
-SET(JKU_LIBS ${MPFR_LIBRARIES} ${Boost_LIBRARIES})
+SET(JKU_LIBS
+    ${MPFR_LIBRARIES}
+    ${Boost_LIBRARIES})
 
 add_executable(jku_simulator
     src/main.cpp
@@ -60,8 +61,13 @@ set_target_properties(jku_simulator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_DEBUG Debug
     RUNTIME_OUTPUT_DIRECTORY_RELEASE Release)
 
-message("LIBS: ${JKU_LIBS}")
+IF(STATIC_LINKING)
+    set_target_properties(jku_simulator PROPERTIES
+        LINK_SEARCH_END_STATIC True)
+ENDIF()
+
 
 target_link_libraries(jku_simulator ${JKU_LIBS})
+
 include_directories(src)
 
