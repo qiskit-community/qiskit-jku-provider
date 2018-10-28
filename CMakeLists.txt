@@ -57,9 +57,7 @@ add_executable(jku_simulator
 
 set_target_properties(jku_simulator PROPERTIES
 	LINKER_LANGUAGE CXX
-    CXX_STANDARD 14
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG Debug
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE Release)
+    CXX_STANDARD 14)
 
 IF(STATIC_LINKING)
     set_target_properties(jku_simulator PROPERTIES
