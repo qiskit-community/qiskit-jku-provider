@@ -178,21 +178,21 @@ EXTERN QMDDnodeptr QMDDtnode;		// pointer to terminal node
 EXTERN QMDDedge QMDDone,QMDDzero; 	// edges pointing to zero and one QMDD constants 
 
 
-EXTERN long QMDDorder[MAXN];		// variable order initially 0,1,... from bottom up | Usage: QMDDorder[level] := varible at a certain level
-EXTERN long QMDDinvorder[MAXN];	// inverse of variable order (inverse permutation) | Usage: QMDDinvorder[variable] := level of a certain variable
+EXTERN int64_t QMDDorder[MAXN];		// variable order initially 0,1,... from bottom up | Usage: QMDDorder[level] := varible at a certain level
+EXTERN int64_t QMDDinvorder[MAXN];	// inverse of variable order (inverse permutation) | Usage: QMDDinvorder[variable] := level of a certain variable
 
-EXTERN long QMDDnodecount;			// counts active nodes 
-EXTERN long QMDDpeaknodecount;                 // records peak node count in unique table
+EXTERN int64_t QMDDnodecount;			// counts active nodes
+EXTERN int64_t QMDDpeaknodecount;                 // records peak node count in unique table
 
-EXTERN long Ncount;				// used in QMDD node count - very naive approach 
+EXTERN int64_t Ncount;				// used in QMDD node count - very naive approach
 EXTERN QMDDnodeptr Nlist[MAXNODECOUNT];
 
-EXTERN long Nop[6];				// operation counters
+EXTERN int64_t Nop[6];				// operation counters
 
-EXTERN long CTlook[20],CThit[20];	// counters for gathering compute table hit stats 
+EXTERN int64_t CTlook[20],CThit[20];	// counters for gathering compute table hit stats
 
-EXTERN long UTcol, UTmatch, UTlookups;			// counter for collisions / matches in hash tables
-EXTERN long UTkeys[NBUCKET];
+EXTERN int64_t UTcol, UTmatch, UTlookups;			// counter for collisions / matches in hash tables
+EXTERN int64_t UTkeys[NBUCKET];
 
 EXTERN int GCcurrentLimit;			// current garbage collection limit 
 
@@ -260,7 +260,7 @@ struct computeHasher
 	    using std::size_t;
 	    using std::hash;
 
-	   return hash<long>()((long)k.a.p) ^ hash<long>()((long)k.b.p>>3) ^ hash<long>()((long)k.a.w) ^ hash<long>()((long)k.b.w);
+	   return hash<int64_t>()((int64_t)k.a.p) ^ hash<int64_t>()((int64_t)k.b.p>>3) ^ hash<int64_t>()((int64_t)k.a.w) ^ hash<int64_t>()((int64_t)k.b.w);
   }
 };
 

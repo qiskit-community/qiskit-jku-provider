@@ -14,6 +14,7 @@ IF "%target%"=="lint" GOTO :lint
 IF "%target%"=="test" GOTO :test
 IF "%target%"=="profile" GOTO :profile
 IF "%target%"=="dist" GOTO :dist
+IF "%target%"=="sim" GOTO :sim
 
 :usage
 ECHO.
@@ -21,6 +22,7 @@ ECHO.Usage:
 ECHO.    .\make lint    Runs Pyhton source code analysis tool
 ECHO.    .\make test    Runs tests
 ECHO.    .\make profile Runs profiling tests
+ECHO.    .\make sim     Builds the simulator
 ECHO.
 GOTO :end
 
@@ -45,6 +47,13 @@ FOR %%A IN (py34_64 py35_64 py36_64 py37_64 py34_32 py35_32 py36_32 py37_32) DO 
   python setup.py bdist_wheel
 )
 IF errorlevel 9009 GOTO :error
+GOTO :next
+
+:sim
+cmake . -Bbuild/lib/qiskit_jku_provider -DSTATIC_LINKING=True -G"MinGW Makefiles"
+mingw32-make -C build/lib/qiskit_jku_provider VERBOSE=1
+COPY %MPFRDIR%\mpfr.dll build\lib\qiskit_jku_provider\mpfr.dll
+COPY %GMPDIR%\mpir.dll build\lib\qiskit_jku_provider\mpir.dll
 GOTO :next
 
 :error
