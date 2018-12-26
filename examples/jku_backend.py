@@ -10,16 +10,13 @@ Example use of the JKU backend
 """
 
 import os,sys
-from qiskit_addon_jku import JKUProvider
-
-from qiskit import execute, load_qasm_file
-
-
+from qiskit_jku_provider import JKUProvider
+from qiskit import execute, QuantumCircuit
 
 RUNDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 def use_jku_backend():
-    q_circuit = load_qasm_file(RUNDIR  + '/ghz.qasm')
+    q_circuit = QuantumCircuit.from_qasm_file(RUNDIR  + '/ghz.qasm')
     jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
     result = execute(q_circuit, backend=jku_backend, shots=100).result()
     print("counts: ")

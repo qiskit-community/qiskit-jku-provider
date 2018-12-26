@@ -23,13 +23,16 @@ import subprocess
 from collections import OrderedDict, Counter
 import numpy as np
 
-from qiskit.backends import BaseBackend
+#from qiskit.backends import BaseBackend
 from qiskit.backends.aer import AerJob
 from qiskit.backends.aer._simulatorerror import SimulatorError
 from qiskit.qobj import qobj_to_dict
 from qiskit.result._utils import result_from_old_style_dict
+from qiskit.result import Result
+from qiskit.providers import BaseBackend
+from qiskit.providers.models import BackendConfiguration
 
-
+VERSION = '1.0.2'
 RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
 Developer: Alwin Zulehner, Robert Wille
 For more information, please visit http://iic.jku.at/eda/research/quantum_simulation"""
@@ -106,7 +109,7 @@ class JKUSimulatorWrapper:
         else:
             params_string = ""
         if (name_string == "measure"): #special syntax
-            return "measure {} -> {};".format(qubit_names[op["qubits"][0]], clbit_names[op["clbits"][0]])
+            return "measure {} -> {};".format(qubit_names[op["qubits"][0]], clbit_names[op["memory"][0]])
         if (name_string == "snapshot"): #some QISKit bug causes snapshot params to be passed as floats
             params_string = "({})".format(", ".join([str(int(p)) for p in op['params']]))
         return "{}{} {};".format(name_string, params_string, qubits_string)
@@ -114,8 +117,8 @@ class JKUSimulatorWrapper:
     #converts the full qobj circuit (except measurements) to a QASM file JKU can handle
     def convert_qobj_circuit_to_jku_qasm(self, qobj_circuit):
         circuit = qobj_circuit['compiled_circuit']
-        qubit_num = circuit['header']['number_of_qubits']
-        clbit_num = circuit['header']['number_of_clbits']
+        qubit_num = len(circuit['header']['qubit_labels'])
+        clbit_num = len(circuit['header']['clbit_labels'])
         #arbitrary qubit names, to use only in the temp qasm file we pass to JKU's simulator
         qubit_names = ['q[{}]'.format(i) for i in range(qubit_num)]
         clbit_names = ['c[{}]'.format(i) for i in range(clbit_num)]
@@ -150,12 +153,15 @@ class JKUSimulatorWrapper:
         os.remove("temp.qasm")
         os.remove("qelib1.inc")
         output_data = self.parse_output(run_output, measurement_data)
-        result_dict = {'status': 'DONE', 'time_taken': self.end_time - self.start_time,
-                       'seed': self.seed, 'shots': self.shots,
-                       'data': output_data,
-                       'success': True}
-        if 'name' in qobj_circuit:
-            result_dict['name'] = qobj_circuit['name']
+        header = qobj_circuit['compiled_circuit']['header']
+        result_dict = {'header': {'name': header['name'],
+                           'memory_slots': header['memory_slots'],
+                           'creg_sizes': header['creg_sizes']},
+                        'status': 'DONE', 'time_taken': self.end_time - self.start_time,
+                        'seed': self.seed, 'shots': self.shots,
+                        'data': output_data,
+                        'success': True
+                       }
         return result_dict
 
     #parsing the textual JKU output
@@ -197,7 +203,8 @@ class JKUSimulatorWrapper:
     def convert_counts(self, counts, measurement_data):
         result = {}
         for qubits, count in counts.items():
-            clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
+            #clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
+            clbits = self.qubits_to_clbits(qubits, measurement_data)
             result[clbits] = result.get(clbits, 0) + count
         return result
 
@@ -209,7 +216,9 @@ class JKUSimulatorWrapper:
         s = "".join(clbits)
         #QISKit expects clbits for different registers to be space-separated, i.e. '01 100'
         clbits_lengths = [x[1] for x in measurement_data['clbits']]
-        return " ".join(self.slice_by_lengths(s, clbits_lengths))
+        sliced_clbits = self.slice_by_lengths(s, clbits_lengths)
+        sliced_clbits = [hex(int(s,2)) for s in sliced_clbits] #qiskit expects hex representation
+        return " ".join(sliced_clbits)
 
     def slice_by_lengths(self, arr, lengths):
         i = 0
@@ -225,13 +234,13 @@ class JKUSimulatorWrapper:
         #Create a mapping of qubit --> classical bit for any end-circuit measurement
         header = qobj_circuit['compiled_circuit']['header']
         measurement_data = {'mapping': {},
-                            'clbits': header['clbit_labels'],
-                            'clbits_num': header['number_of_clbits'],
-                            'qubits_num': header['number_of_qubits']}
+                            'clbits': header['creg_sizes'],
+                            'clbits_num': len(header['clbit_labels']),
+                            'qubits_num': len(header['qubit_labels'])}
         ops = qobj_circuit['compiled_circuit']['operations']
         for op in ops:
             if op["name"] == "measure":
-                measurement_data['mapping'][op['qubits'][0]] = op['clbits'][0]
+                measurement_data['mapping'][op['qubits'][0]] = op['memory'][0]
             else:
                 if op['qubits'][0] in measurement_data['mapping'].keys() and not op["name"] == 'snapshot':
                     raise RuntimeError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
@@ -245,47 +254,57 @@ EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 DEFAULT_SIMULATOR_PATHS = [
     # This is the path where Makefile creates the simulator by default
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '../build/jku_simulator'
+                                 '../build/lib/qiskit_jku_provider/jku_simulator'
                                  + EXTENSION)),
     # This is the path where PIP installs the simulator
     os.path.abspath(os.path.join(os.path.dirname(__file__),
                                  'jku_simulator' + EXTENSION)),
 ]
-
 class QasmSimulatorJKU(BaseBackend):
     """Python interface to JKU's simulator"""
 
     DEFAULT_CONFIGURATION = {
-        'name': 'local_statevector_simulator_jku',
-        'url': 'http://iic.jku.at/eda/research/quantum_simulation/',
+        'backend_name': 'local_statevector_simulator_jku',
+        'backend_version': VERSION,
+        'url': 'https://github.com/Qiskit/qiskit-jku-provider',
         'simulator': True,
         'local': True,
         'description': 'JKU C++ simulator',
-        'coupling_map': 'all-to-all',
-        "basis_gates": 'u0,u1,u2,u3,cx,x,y,z,h,s,t,snapshot'
+        'basis_gates': ['u0','u1','u2','u3','cx','x','y','z','h','s','t','snapshot'],
+        'memory': True,
+        'n_qubits': 30,
+        'conditional': False,
+        'max_shots': 100000,
+        'open_pulse': False,
+        'gates': [
+            {
+                'name': 'TODO',
+                'parameters': [],
+                'qasm_def': 'TODO'
+            }
+        ]
     }
 
-    def __init__(self, configuration=None, silent = False):
+    def __init__(self, configuration=None, provider=None, silent = False):
         """
         Args:
             configuration (dict): backend configuration
         Raises:
              ImportError: if the JKU simulator is not available.
         """
-        super().__init__(configuration or self.DEFAULT_CONFIGURATION.copy())
-        if self._configuration.get('exe'):
-            paths = [self._configuration.get('exe')]
-        else:
-            paths = DEFAULT_SIMULATOR_PATHS
+        super().__init__(configuration=(configuration or
+                                        BackendConfiguration.from_dict(self.DEFAULT_CONFIGURATION)),
+                         provider=provider)
+
+        paths = DEFAULT_SIMULATOR_PATHS
             # Ensure that the executable is available.
         try:
-            self._configuration['exe'] = next(
+            self.executable = next(
                 path for path in paths if (os.path.exists(path) and
                                            os.path.getsize(path) > 100))
         except StopIteration:
             print(paths)
-            raise FileNotFoundError('Simulator executable not found (using %s)' %
-                                    self._configuration.get('exe', 'default locations'))
+            raise FileNotFoundError('Simulator executable not found')
 
         self.silent = silent
 
@@ -302,23 +321,22 @@ class QasmSimulatorJKU(BaseBackend):
 
         qobj_old_format = qobj_to_dict(qobj, version='0.0.1')
 
-        s = JKUSimulatorWrapper(self._configuration['exe'], silent = self.silent)
+        s = JKUSimulatorWrapper(self.executable, silent = self.silent)
         #self._shots = qobj['config']['shots']
         s.shots = qobj_old_format['config']['shots']
         start = time.time()
         for circuit in qobj_old_format['circuits']:
             result_list.append(s.run_on_qobj_circuit(circuit))
         end = time.time()
-        result = {'backend': self._configuration['name'],
-                  'id': qobj_old_format['id'],
+        result = {'backend_name': self._configuration.backend_name,
+                  'backend_version': VERSION,
+                  'qobj_id': qobj.qobj_id,
                   'job_id': job_id,
-                  'result': result_list,
+                  'results': result_list,
                   'status': 'COMPLETED',
                   'success': True,
                   'time_taken': (end - start)}
-        return result_from_old_style_dict(
-            result,
-            [circuit.header.name for circuit in qobj.experiments])
+        return Result.from_dict(result)
 
     def _validate(self, qobj):
         #for now, JKU should be ran with shots = 1 and no measurement gates
