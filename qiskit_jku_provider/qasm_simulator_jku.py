@@ -213,20 +213,8 @@ class JKUSimulatorWrapper:
         clbits = list('0'*measurement_data['clbits_num'])
         for (qubit, clbit) in measurement_data['mapping'].items():
             clbits[clbit] = qubits[qubit]
-        s = "".join(clbits)
-        #QISKit expects clbits for different registers to be space-separated, i.e. '01 100'
-        clbits_lengths = [x[1] for x in measurement_data['clbits']]
-        sliced_clbits = self.slice_by_lengths(s, clbits_lengths)
-        sliced_clbits = [hex(int(s,2)) for s in sliced_clbits] #qiskit expects hex representation
-        return " ".join(sliced_clbits)
-
-    def slice_by_lengths(self, arr, lengths):
-        i = 0
-        res = []
-        for s in lengths:
-            res.append(arr[i:i+s])
-            i = i + s
-        return res
+        s = "".join(clbits)[::-1]
+        return hex(int(s,2))
 
     #finding the data relevant to measurements and clbits in the qobj_circuit
     def compute_measurement_data(self, qobj_circuit):

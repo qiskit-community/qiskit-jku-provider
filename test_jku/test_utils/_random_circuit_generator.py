@@ -208,15 +208,13 @@ class RandomCircuitGenerator(object):
                         depth_cnt -= 1
                     elif op_name == 'barrier':
                         ireg = random.randint(0, n_registers-1)
-                        qr_name = 'qr' + str(ireg)
-                        qreg = circuit.regs[qr_name]
+                        qreg = circuit.qregs[ireg]
                         bar_args = [(qreg, mi) for mi in range(qreg.size)]
                         operator(*bar_args)
                     else:
                         # select random register
                         ireg = random.randint(0, n_registers-1)
-                        qr_name = 'qr' + str(ireg)
-                        qreg = circuit.regs[qr_name]
+                        qreg = circuit.qregs[ireg]
                         if qreg.size >= n_regs:
                             qind_list = random.sample(range(qreg.size), n_regs)
                             op_args.extend([qreg[qind] for qind in qind_list])
@@ -230,12 +228,12 @@ class RandomCircuitGenerator(object):
                 for qind in m_list:
                     rind = 0  # register index
                     cumtot = 0
-                    while qind >= cumtot + circuit.regs['qr' + str(rind)].size:
-                        cumtot += circuit.regs['qr' + str(rind)].size
+                    while qind >= cumtot + circuit.qregs[rind].size:
+                        cumtot += circuit.qregs[rind].size
                         rind += 1
                     qrind = int(qind - cumtot)
-                    qreg = circuit.regs['qr'+str(rind)]
-                    creg = circuit.regs['cr'+str(rind)]
+                    qreg = circuit.qregs[rind]
+                    creg = circuit.cregs[rind]
                     circuit.measure(qreg[qrind], creg[qrind])
             self.circuit_list.append(circuit)
 
@@ -281,11 +279,12 @@ class RandomCircuitGenerator(object):
         elif format_ == 'QuantumCircuit':
             qc_list = []
             for circuit in self.circuit_list:
-                node_circuit = qasm.Qasm(data=circuit.qasm()).parse()
-                unrolled_circuit = unroll.Unroller(
-                    node_circuit,
-                    unroll.CircuitBackend(self.basis_gates))
-                qc_list.append(unrolled_circuit.execute())
+                qc_list.append(circuit)
+                # node_circuit = qasm.Qasm(data=circuit.qasm()).parse()
+                # unrolled_circuit = unroll.Unroller(
+                #     node_circuit,
+                #     unroll.CircuitBackend(self.basis_gates))
+                # qc_list.append(unrolled_circuit.execute())
             return qc_list
         # elif format is 'dag':
         #     qc_list = []

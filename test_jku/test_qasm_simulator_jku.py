@@ -18,8 +18,8 @@ from qiskit import execute
 from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
 from qiskit import ClassicalRegister
-from qiskit.wrapper import get_backend
-from qiskit_addon_jku import QasmSimulatorJKU
+from qiskit import Aer
+from qiskit_jku_provider import QasmSimulatorJKU
 
 try:
     pq_simulator = QasmSimulatorJKU(silent = True)
@@ -65,10 +65,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
     def run_on_simulators(self, qc, pq_simulator, qk_simulator, shots, seed):
         job_pq = execute(qc, pq_simulator, shots=shots, seed=seed)
         job_qk = execute(qc, qk_simulator, shots=shots, seed=seed)
-        result_pq = job_pq.result()
-        result_qk = job_qk.result()
-        counts_pq = result_pq.get_counts(result_pq.get_names()[0])
-        counts_qk = result_qk.get_counts(result_qk.get_names()[0])
+        counts_pq = job_pq.result().get_counts()
+        counts_qk = job_qk.result().get_counts()
         states = counts_qk.keys() | counts_pq.keys()
         # contingency table
         ctable = numpy.array([[counts_pq.get(key, 0) for key in states],
@@ -85,7 +83,7 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         qc.measure(qr, cr)
         job = execute(qc, pq_simulator, shots=shots)
         result_pq = job.result(timeout=30)
-        self.assertEqual(result_pq.get_counts(result_pq.get_names()[0]),
+        self.assertEqual(result_pq.get_counts(),
                          {'1': shots})
 
     def test_entangle(self):
@@ -102,14 +100,14 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         timeout = 30
         job = execute(qc, pq_simulator, shots=shots)
         result = job.result(timeout=timeout)
-        counts = result.get_counts(result.get_names()[0])
+        counts = result.get_counts()
         self.log.info(counts)
         for key, _ in counts.items():
             with self.subTest(key=key):
                 self.assertTrue(key in ['0' * N, '1' * N])
 
     def test_output_style(self):
-        qk_simulator = get_backend('local_qasm_simulator')
+        qk_simulator = Aer.get_backend('qasm_simulator')
 
         qr = QuantumRegister(2)
         cr = ClassicalRegister(2)
@@ -134,7 +132,7 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         self.assertGreater(result[1], 0.01)
 
     def test_random_circuits(self):
-        qk_simulator = get_backend('local_qasm_simulator')
+        qk_simulator = Aer.get_backend('qasm_simulator')
         for circuit in self.rqg.get_circuits(format_='QuantumCircuit'):
             self.log.info(circuit.qasm())
             shots = 100
@@ -142,8 +140,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
             job_qk = execute(circuit, qk_simulator, shots=shots, seed=1)
             result_pq = job_pq.result()
             result_qk = job_qk.result()
-            counts_pq = result_pq.get_counts(result_pq.get_names()[0])
-            counts_qk = result_qk.get_counts(result_qk.get_names()[0])
+            counts_pq = result_pq.get_counts()
+            counts_qk = result_qk.get_counts()
             self.log.info('local_qasm_simulator_jku: %s', str(counts_pq))
             self.log.info('local_qasm_simulator: %s', str(counts_qk))
             states = counts_qk.keys() | counts_pq.keys()
