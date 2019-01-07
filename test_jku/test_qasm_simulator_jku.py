@@ -18,7 +18,7 @@ from qiskit import execute
 from qiskit import QuantumCircuit
 from qiskit import QuantumRegister
 from qiskit import ClassicalRegister
-from qiskit import Aer
+from qiskit import BasicAer
 from qiskit_jku_provider import QasmSimulatorJKU
 
 try:
@@ -107,7 +107,7 @@ class TestQasmSimulatorJKU(QiskitTestCase):
                 self.assertTrue(key in ['0' * N, '1' * N])
 
     def test_output_style(self):
-        qk_simulator = Aer.get_backend('qasm_simulator')
+        qk_simulator = BasicAer.get_backend('qasm_simulator')
 
         qr = QuantumRegister(2)
         cr = ClassicalRegister(2)
@@ -132,7 +132,7 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         self.assertGreater(result[1], 0.01)
 
     def test_random_circuits(self):
-        qk_simulator = Aer.get_backend('qasm_simulator')
+        qk_simulator = BasicAer.get_backend('qasm_simulator')
         for circuit in self.rqg.get_circuits(format_='QuantumCircuit'):
             self.log.info(circuit.qasm())
             shots = 100
