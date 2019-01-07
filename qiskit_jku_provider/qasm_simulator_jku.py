@@ -14,20 +14,13 @@ import operator
 import random
 import uuid
 import logging
-import warnings
 import platform
 import os
 import json
-import re
 import subprocess
-from collections import OrderedDict, Counter
-import numpy as np
 
-#from qiskit.backends import BaseBackend
 from qiskit.backends.aer import AerJob
-from qiskit.backends.aer._simulatorerror import SimulatorError
 from qiskit.qobj import qobj_to_dict
-from qiskit.result._utils import result_from_old_style_dict
 from qiskit.result import Result
 from qiskit.providers import BaseBackend
 from qiskit.providers.models import BackendConfiguration
@@ -93,11 +86,9 @@ class JKUSimulatorWrapper:
               ]
         if 'probabilities' in self.additional_output_data:
             cmd.append('--display_probabilities')
-        #print("running command {}".format(" ".join(cmd)))
         if not self.silent:
             print(RUN_MESSAGE)
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
-        #print("DONE running command {}".format(" ".join(cmd)))
         return output
 
     #convert one operation from the qobj file to a QASM line in the format JKU can handle
@@ -203,7 +194,6 @@ class JKUSimulatorWrapper:
     def convert_counts(self, counts, measurement_data):
         result = {}
         for qubits, count in counts.items():
-            #clbits = self.qubits_to_clbits(qubits, measurement_data)[::-1]
             clbits = self.qubits_to_clbits(qubits, measurement_data)
             result[clbits] = result.get(clbits, 0) + count
         return result
@@ -310,7 +300,6 @@ class QasmSimulatorJKU(BaseBackend):
         qobj_old_format = qobj_to_dict(qobj, version='0.0.1')
 
         s = JKUSimulatorWrapper(self.executable, silent = self.silent)
-        #self._shots = qobj['config']['shots']
         s.shots = qobj_old_format['config']['shots']
         start = time.time()
         for circuit in qobj_old_format['circuits']:
