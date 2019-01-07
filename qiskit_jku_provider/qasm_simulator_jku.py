@@ -32,7 +32,7 @@ from qiskit.result import Result
 from qiskit.providers import BaseBackend
 from qiskit.providers.models import BackendConfiguration
 
-VERSION = '1.0.2'
+VERSION = '1.1.0'
 RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
 Developer: Alwin Zulehner, Robert Wille
 For more information, please visit http://iic.jku.at/eda/research/quantum_simulation"""
