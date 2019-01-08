@@ -20,6 +20,7 @@ import json
 import subprocess
 
 from .jkujob import JKUJob
+from .jkusimulatorerror import JKUSimulatorError
 from qiskit.qobj import qobj_to_dict
 from qiskit.result import Result
 from qiskit.providers import BaseBackend
@@ -221,7 +222,7 @@ class JKUSimulatorWrapper:
                 measurement_data['mapping'][op['qubits'][0]] = op['memory'][0]
             else:
                 if op['qubits'][0] in measurement_data['mapping'].keys() and not op["name"] == 'snapshot':
-                    raise RuntimeError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
+                    raise JKUSimulatorError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
         return measurement_data
 
 logger = logging.getLogger(__name__)
