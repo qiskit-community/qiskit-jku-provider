@@ -19,7 +19,7 @@ import os
 import json
 import subprocess
 
-from qiskit.backends.aer import AerJob
+from .jkujob import JKUJob
 from qiskit.qobj import qobj_to_dict
 from qiskit.result import Result
 from qiskit.providers import BaseBackend
@@ -288,7 +288,7 @@ class QasmSimulatorJKU(BaseBackend):
 
     def run(self, qobj):
         job_id = str(uuid.uuid4())
-        local_job = AerJob(self, job_id, self._run_job, qobj)
+        local_job = JKUJob(self, job_id, self._run_job, qobj)
         local_job.submit()
         return local_job
 
