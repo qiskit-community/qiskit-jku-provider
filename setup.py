@@ -72,8 +72,8 @@ class JKUSimulatorBuild(build):
                     print("-- Copying {} to {}".format(mpir_dll, mpir_dll_dst))
                     copyfile(mpir_dll, mpir_dll_dst)
 
-                except Exception as e:
-                    print("WARNING: DLL files copy failed: {}".format(e))
+                except Exception as copy_exception:
+                    print("WARNING: DLL files copy failed: {}".format(copy_exception))
 
 
             self.execute(compile_simulator, [], 'Compiling JKU Simulator')

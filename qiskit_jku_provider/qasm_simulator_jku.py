@@ -7,7 +7,6 @@
 
 """Backend for the JKU C++ simulator."""
 
-
 import time
 import itertools
 import operator
@@ -56,13 +55,15 @@ gate ccx a,b,c {h c; cx b,c; tdg c; cx a,c; t c; cx b,c; tdg c; cx a,c; t b; t c
 gate cswap a,b,c {cx c,b; ccx a,b,c; cx c,b;}
 gate crz(lambda) a,b {u1(lambda/2) b; cx a,b; u1(-lambda/2) b; cx a,b;}
 gate cu1(lambda) a,b {u1(lambda/2) a; cx a,b; u1(-lambda/2) b; cx a,b; u1(lambda/2) b;}
-gate cu3(theta,phi,lambda) c, t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(phi+lambda)/2) t; cx c,t; u3(theta/2,phi,0) t;}
+gate cu3(theta,phi,lambda) c,t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(phi+lambda)/2) t; cx c,t; u3(theta/2,phi,0) t;}
 gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 
-#this class handles the actual technical details of converting to and from QISKit style data
+
+# this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
     """Converter to and from JKU's simulator"""
-    def __init__(self, exe=None, silent = False):
+
+    def __init__(self, exe=None, silent=False):
         self.seed = 0
         self.shots = 1
         self.exec = exe
@@ -70,13 +71,13 @@ class JKUSimulatorWrapper:
         self.silent = silent
 
     def set_config(self, config):
-        if 'data' in config: #additional output data specifications
+        if 'data' in config:  # additional output data specifications
             self.additional_output_data = config['data']
         if 'seed' in config and config['seed'] is not None:
             self.seed = config['seed']
         else:
             self.seed = random.getrandbits(32)
-            
+
     def run(self, filename):
         """performs the actual external call to the JKU exe"""
         cmd = [self.exec,
@@ -84,7 +85,7 @@ class JKUSimulatorWrapper:
                '--seed={}'.format(self.seed),
                '--shots={}'.format(self.shots),
                '--display_statevector',
-              ]
+               ]
         if 'probabilities' in self.additional_output_data:
             cmd.append('--display_probabilities')
         if not self.silent:
@@ -92,48 +93,48 @@ class JKUSimulatorWrapper:
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
         return output
 
-    #convert one operation from the qobj file to a QASM line in the format JKU can handle
     def convert_operation_to_line(self, op, qubit_names, clbit_names):
+        """convert one operation from the qobj file to a QASM line in the format JKU can handle"""
         name_string = op['name']
         qubits_string = ", ".join([qubit_names[i] for i in op["qubits"]])
         if 'params' in op and len(op['params']) > 0:
             params_string = "({})".format(", ".join([str(p) for p in op['params']]))
         else:
             params_string = ""
-        if (name_string == "measure"): #special syntax
+        if name_string == "measure":  # special syntax
             return "measure {} -> {};".format(qubit_names[op["qubits"][0]], clbit_names[op["memory"][0]])
-        if (name_string == "snapshot"): #some QISKit bug causes snapshot params to be passed as floats
+        if name_string == "snapshot":  # some QISKit bug causes snapshot params to be passed as floats
             params_string = "({})".format(", ".join([str(int(p)) for p in op['params']]))
         return "{}{} {};".format(name_string, params_string, qubits_string)
-    
-    #converts the full qobj circuit (except measurements) to a QASM file JKU can handle
+
+    # converts the full qobj circuit (except measurements) to a QASM file JKU can handle
     def convert_qobj_circuit_to_jku_qasm(self, qobj_circuit):
         circuit = qobj_circuit['compiled_circuit']
         qubit_num = len(circuit['header']['qubit_labels'])
         clbit_num = len(circuit['header']['clbit_labels'])
-        #arbitrary qubit names, to use only in the temp qasm file we pass to JKU's simulator
+        # arbitrary qubit names, to use only in the temp qasm file we pass to JKU's simulator
         qubit_names = ['q[{}]'.format(i) for i in range(qubit_num)]
         clbit_names = ['c[{}]'.format(i) for i in range(clbit_num)]
-        qasm_file_lines = []
-        qasm_file_lines.append("OPENQASM 2.0;")
-        qasm_file_lines.append("include \"qelib1.inc\";")
-        qasm_file_lines.append("qreg q[{}];".format(qubit_num))
-        qasm_file_lines.append("creg c[{}];".format(qubit_num))
+        qasm_file_lines = ["OPENQASM 2.0;",
+                           "include \"qelib1.inc\";",
+                           "qreg q[{}];".format(qubit_num),
+                           "creg c[{}];".format(qubit_num)
+                           ]
         for op in circuit['operations']:
-             qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names, clbit_names))
+            qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names, clbit_names))
         qasm_content = "\n".join(qasm_file_lines) + "\n"
         return qasm_content
 
-    #convert the qobj circuit to QASM and save as temp file
+    # convert the qobj circuit to QASM and save as temp file
     def save_circuit_file(self, filename, qobj_circuit):
         qasm = self.convert_qobj_circuit_to_jku_qasm(qobj_circuit)
         with open(filename, "w") as qasm_file:
             qasm_file.write(qasm)
 
-    #runs the qobj circuit on the JKU exe while performing input/output conversions
+    # runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_on_qobj_circuit(self, qobj_circuit):
         self.set_config(qobj_circuit['config'])
-        #do this before running so we can output warning to the user as soon as possible if needed
+        # do this before running so we can output warning to the user as soon as possible if needed
         measurement_data = self.compute_measurement_data(qobj_circuit)
         filename = "temp.qasm"
         self.save_circuit_file(filename, qobj_circuit)
@@ -147,32 +148,33 @@ class JKUSimulatorWrapper:
         output_data = self.parse_output(run_output, measurement_data)
         header = qobj_circuit['compiled_circuit']['header']
         result_dict = {'header': {'name': header['name'],
-                           'memory_slots': header['memory_slots'],
-                           'creg_sizes': header['creg_sizes']},
-                        'status': 'DONE', 'time_taken': self.end_time - self.start_time,
-                        'seed': self.seed, 'shots': self.shots,
-                        'data': output_data,
-                        'success': True
+                                  'memory_slots': header['memory_slots'],
+                                  'creg_sizes': header['creg_sizes']},
+                       'status': 'DONE', 'time_taken': self.end_time - self.start_time,
+                       'seed': self.seed, 'shots': self.shots,
+                       'data': output_data,
+                       'success': True
                        }
         return result_dict
 
-    #parsing the textual JKU output
+    # parsing the textual JKU output
     def parse_output(self, run_output, measurement_data):
         result = json.loads(run_output)
         qubits = measurement_data['qubits_num']
-        translation_table = [0] * 2**qubits #QISKit qubit order is reversed, so we fix accordingly
-        for n in range(2**qubits):
-            translation_table[n] = int(bin(n)[2:].rjust(qubits,'0')[::-1],2)
+        translation_table = [0] * 2 ** qubits  # QISKit qubit order is reversed, so we fix accordingly
+        for n in range(2 ** qubits):
+            translation_table[n] = int(bin(n)[2:].rjust(qubits, '0')[::-1], 2)
         if 'counts' in result:
             result['counts'] = self.convert_counts(result['counts'], measurement_data)
         if 'snapshots' in result:
             for snapshot_key, snapshot_data in result['snapshots'].items():
                 result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
         return result
-    
+
     def convert_snapshot(self, snapshot_data, translation_table):
         if 'statevector' in snapshot_data:
-            snapshot_data['statevector'] = self.convert_statevector_data(snapshot_data['statevector'], translation_table)
+            snapshot_data['statevector'] = self.convert_statevector_data(snapshot_data['statevector'],
+                                                                         translation_table)
         if 'probabilities' in snapshot_data:
             probs_data = snapshot_data.pop('probabilities')
             if 'probabilities' in self.additional_output_data:
@@ -182,15 +184,15 @@ class JKUSimulatorWrapper:
             if 'probabilities_ket' in self.additional_output_data:
                 snapshot_data['probabilities_ket'] = self.convert_probabilities_ket(probs_ket_data)
         return snapshot_data
-            
+
     def convert_statevector_data(self, statevector, translation_table):
-        return [complex(statevector[translation_table[i]].replace('i','j')) for i in range(len(translation_table))]
-    
+        return [complex(statevector[translation_table[i]].replace('i', 'j')) for i in range(len(translation_table))]
+
     def convert_probabilities(self, probs_data, translation_table):
         return [probs_data[translation_table[i]] for i in range(len(translation_table))]
-    
+
     def convert_probabilities_ket(self, probs_ket_data):
-        return dict([(key[::-1], value) for key,value in probs_ket_data.items()])
+        return dict([(key[::-1], value) for key, value in probs_ket_data.items()])
 
     def convert_counts(self, counts, measurement_data):
         result = {}
@@ -199,18 +201,18 @@ class JKUSimulatorWrapper:
             result[clbits] = result.get(clbits, 0) + count
         return result
 
-    #converting the actual measurement results for all qubits to clbits the user expects to see
+    # converting the actual measurement results for all qubits to clbits the user expects to see
     def qubits_to_clbits(self, qubits, measurement_data):
-        clbits = list('0'*measurement_data['clbits_num'])
+        clbits = list('0' * measurement_data['clbits_num'])
         for (qubit, clbit) in measurement_data['mapping'].items():
             clbits[clbit] = qubits[qubit]
         s = "".join(clbits)[::-1]
-        return hex(int(s,2))
+        return hex(int(s, 2))
 
-    #finding the data relevant to measurements and clbits in the qobj_circuit
+    # finding the data relevant to measurements and clbits in the qobj_circuit
     def compute_measurement_data(self, qobj_circuit):
-        #Ignore (and inform the user) any in-circuit measurements
-        #Create a mapping of qubit --> classical bit for any end-circuit measurement
+        # Ignore (and inform the user) any in-circuit measurements
+        # Create a mapping of qubit --> classical bit for any end-circuit measurement
         header = qobj_circuit['compiled_circuit']['header']
         measurement_data = {'mapping': {},
                             'clbits': header['creg_sizes'],
@@ -222,8 +224,11 @@ class JKUSimulatorWrapper:
                 measurement_data['mapping'][op['qubits'][0]] = op['memory'][0]
             else:
                 if op['qubits'][0] in measurement_data['mapping'].keys() and not op["name"] == 'snapshot':
-                    raise JKUSimulatorError("Error: qubit {} was used after being measured. This is currently not supported by JKU".format(op['qubits'][0]))
+                    raise JKUSimulatorError(
+                        "Error: qubit {} was used after being measured. This is currently not supported by JKU".format(
+                            op['qubits'][0]))
         return measurement_data
+
 
 logger = logging.getLogger(__name__)
 
@@ -239,6 +244,8 @@ DEFAULT_SIMULATOR_PATHS = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),
                                  'jku_simulator' + EXTENSION)),
 ]
+
+
 class QasmSimulatorJKU(BaseBackend):
     """Python interface to JKU's simulator"""
 
@@ -249,7 +256,7 @@ class QasmSimulatorJKU(BaseBackend):
         'simulator': True,
         'local': True,
         'description': 'JKU C++ simulator',
-        'basis_gates': ['u0','u1','u2','u3','cx','x','y','z','h','s','t','snapshot'],
+        'basis_gates': ['u0', 'u1', 'u2', 'u3', 'cx', 'x', 'y', 'z', 'h', 's', 't', 'snapshot'],
         'memory': True,
         'n_qubits': 30,
         'conditional': False,
@@ -264,7 +271,7 @@ class QasmSimulatorJKU(BaseBackend):
         ]
     }
 
-    def __init__(self, configuration=None, provider=None, silent = False):
+    def __init__(self, configuration=None, provider=None, silent=False):
         """
         Args:
             configuration (dict): backend configuration
@@ -276,7 +283,7 @@ class QasmSimulatorJKU(BaseBackend):
                          provider=provider)
 
         paths = DEFAULT_SIMULATOR_PATHS
-            # Ensure that the executable is available.
+        # Ensure that the executable is available.
         try:
             self.executable = next(
                 path for path in paths if (os.path.exists(path) and
@@ -300,7 +307,7 @@ class QasmSimulatorJKU(BaseBackend):
 
         qobj_old_format = qobj_to_dict(qobj, version='0.0.1')
 
-        s = JKUSimulatorWrapper(self.executable, silent = self.silent)
+        s = JKUSimulatorWrapper(self.executable, silent=self.silent)
         s.shots = qobj_old_format['config']['shots']
         start = time.time()
         for circuit in qobj_old_format['circuits']:
@@ -317,8 +324,8 @@ class QasmSimulatorJKU(BaseBackend):
         return Result.from_dict(result)
 
     def _validate(self, qobj):
-        #for now, JKU should be ran with shots = 1 and no measurement gates
-        #hence, we do not check for those cases as in the default qasm simulator
+        # for now, JKU should be ran with shots = 1 and no measurement gates
+        # hence, we do not check for those cases as in the default qasm simulator
         return
 
 
@@ -362,6 +369,6 @@ def _format_result(counts, cl_reg_index, cl_reg_nbits):
         new_key = [key[-cl_reg_nbits[0]:]]
         for index, nbits in zip(cl_reg_index[1:],
                                 cl_reg_nbits[1:]):
-            new_key.insert(0, key[-(index+nbits):-index])
+            new_key.insert(0, key[-(index + nbits):-index])
         fcounts[' '.join(new_key)] = value
     return fcounts
