@@ -109,10 +109,10 @@ ListElementPtr QMDDnewListElement(void) {
 		j = sizeof(ListElement);
 		;
 		r = (ListElementPtr) malloc(2000 * j);
-		r2 = (ListElementPtr) ((long) r + j);
+		r2 = (ListElementPtr) ((int64_t) r + j);
 		Lavail = r2;
-		for (i = 0; i < 1998; i++, r2 = (ListElementPtr) ((long) r2 + j)) {
-			r2->next = (ListElementPtr) ((long) r2 + j);
+		for (i = 0; i < 1998; i++, r2 = (ListElementPtr) ((int64_t) r2 + j)) {
+			r2->next = (ListElementPtr) ((int64_t) r2 + j);
 		}
 		r2->next = NULL;
 	}
@@ -846,10 +846,10 @@ QMDDnodeptr QMDDgetNode(void) {
 
 		j = sizeof(QMDDnode);//+Nedge*sizeof(QMDDedge);				// estimated value of a QMDDnode ! DANGER ous. pN calculated 44=sizeof(QMDDnode)+Nedge*sizeof(QMDDedge)
 		r = (QMDDnodeptr) malloc(2000 * j);
-		r2 = (QMDDnodeptr) ((long) r + j);
+		r2 = (QMDDnodeptr) ((int64_t) r + j);
 		Avail = r2;
-		for (i = 0; i < 1998; i++, r2 = (QMDDnodeptr) ((long) r2 + j)) {
-			r2->next = (QMDDnodeptr) ((long) r2 + j);
+		for (i = 0; i < 1998; i++, r2 = (QMDDnodeptr) ((int64_t) r2 + j)) {
+			r2->next = (QMDDnodeptr) ((int64_t) r2 + j);
 		}
 		r2->next = NULL;
 	}
@@ -981,7 +981,7 @@ void QMDDradixPrint(int p, int n)
 		printf("%d", buffer[i]);
 }
 
-#define CThash(a,b) (((((long)a.p+(long)b.p)>>3)+(int)a.w+(int)b.w+(int)which)&CTMASK)
+#define CThash(a,b) (((((int64_t)a.p+(int64_t)b.p)>>3)+(int)a.w+(int)b.w+(int)which)&CTMASK)
 
 QMDDedge CTlookup(QMDDedge a, QMDDedge b, CTkind which) {
 // Lookup a computation in the compute table

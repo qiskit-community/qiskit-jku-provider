@@ -10,7 +10,7 @@ Example use of the JKU backend
 """
 
 import os
-from qiskit_addon_jku import JKUProvider
+from qiskit_jku_provider import JKUProvider
 from qiskit.extensions.simulator import snapshot
 
 from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, execute
@@ -31,7 +31,7 @@ def use_jku_backend():
     config = {"data": ['probabilities', 'probabilities_ket']}
     jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
     result = execute(qc, backend=jku_backend, shots=1, config=config).result()
-    print(result.get_data())
+    print(result)
 
 if __name__ == "__main__":
     use_jku_backend()

@@ -26,7 +26,7 @@ class JKUProvider(BaseProvider):
         # Populate the list of local JKU backends.
         self.backends_list = {'local_statevector_simulator_jku': QasmSimulatorJKU()}
 
-    def get_backend(self, name):
+    def get_backend(self, name, **kwargs):
         return self.backends_list[name]
 
     def available_backends(self, filters=None):
@@ -42,5 +42,3 @@ class JKUProvider(BaseProvider):
     
     def backends(self, name=None, **kwargs):
         return list(self.backends_list.values())
-        
-        

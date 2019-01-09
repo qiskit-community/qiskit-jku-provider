@@ -17,7 +17,7 @@
 # Copyright (c) 2015 Jack Poulson, <jack.poulson@gmail.com>
 # Redistribution and use is allowed according to the terms of the BSD license.
 
-find_path(MPREAL_INCLUDES NAMES mpreal.h PATHS ${INCLUDE_INSTALL_DIR})
+find_path(MPREAL_INCLUDES NAMES mpreal.h PATHS $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
 
 # Set MPREAL_FIND_VERSION to 1.0.0 if no minimum version is specified
 if(NOT MPREAL_FIND_VERSION)
