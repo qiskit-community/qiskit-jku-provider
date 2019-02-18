@@ -29,8 +29,8 @@ def use_jku_backend():
     qc.measure(qr[2], cr[2])
     qc.snapshot(1)
     config = {"data": ['probabilities', 'probabilities_ket']}
-    jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
-    result = execute(qc, backend=jku_backend, shots=1, config=config).result()
+    jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku', )
+    result = execute(qc, backend=jku_backend, shots=1, config=config, seed=42).result()
     print(result)
 
 if __name__ == "__main__":
