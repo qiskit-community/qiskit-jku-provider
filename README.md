@@ -5,7 +5,7 @@
 This module contains a [Qiskit](https://www.qiskit.org/) provider for the JKU simulator.
 
 The purpose of the JKU simulator is to simulate quantum circuits on a classical computer. 
-In the JKU simulator this is done using the QMDD data structure for improving runtime and memory consumption
+In the JKU simulator this is done using a specialized decision-diagrams data structure for improving runtime and memory consumption
 in situations where the simulated quantum state contains redundancies.  
 
 The [JKU simulator](http://iic.jku.at/eda/research/quantum_simulation/) was written by Alwin Zulehner and Robert Wille from Johannes Kepler University in Linz.
