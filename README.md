@@ -1,4 +1,4 @@
-# Qiskit JKU simulator provieder
+# Qiskit JKU simulator provider
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit-terra.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)
 
