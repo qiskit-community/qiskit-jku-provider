@@ -11,7 +11,7 @@
 
 import logging
 
-from qiskit.backends import BaseProvider
+from qiskit.providers import BaseProvider
 from .qasm_simulator_jku import QasmSimulatorJKU
 
 logger = logging.getLogger(__name__)
