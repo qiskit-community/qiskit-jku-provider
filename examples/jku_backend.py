@@ -18,7 +18,7 @@ RUNDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 def use_jku_backend():
     q_circuit = QuantumCircuit.from_qasm_file(RUNDIR  + '/ghz.qasm')
     jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
-    result = execute(q_circuit, backend=jku_backend, shots=100).result()
+    result = execute(q_circuit, backend=jku_backend, shots=100, seed=42).result()
     print("counts: ")
     print(result.get_counts(q_circuit))
 
