@@ -25,19 +25,30 @@ PIP will handle all dependencies automatically. The latest version of the JKU si
 
 ## Usage
 
-We recommend to follow the [usage example](examples/jku_backend.py). More general information and education on running quantum simulation can be found in the [Qiskit instructions page](https://github.com/Qiskit/qiskit-terra) and the Qiskit tutorials.
+After installing both **qiskit-jku-provider** and **qiskit** itself, the simulator can be used with the following example 
 
-After installing both **qiskit-jku-provider** and **qiskit** itself, the simulator can be used in Qiskit code by importing the provider
+```python
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, execute
+from qiskit_jku_provider import JKUProvider
 
-  ```python
-   >>> from qiskit_jku_provider import JKUProvider
-  ```
+JKU = JKUProvider()
 
-And loading the backend
+qr = QuantumRegister(2)
+cr = ClassicalRegister(2)
 
-  ```python
-   >>> jku_backend = JKUProvider().get_backend('local_statevector_simulator_jku')
-  ```
+qc = QuantumCircuit(qr, cr)
+qc.h(qr[0])
+qc.cx(qr[0], qr[1])
+qc.measure(qr, cr)
+
+jku_backend = JKU.get_backend('local_statevector_simulator_jku')
+
+job = execute(qc, backend=jku_backend)
+
+result = job.result()
+
+print(result.get_counts(qc))
+```
     
 ## License
 
