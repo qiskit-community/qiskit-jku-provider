@@ -28,7 +28,7 @@ meas.measure(qreg1, creg1)
 
 qc = circ + meas
 
-backend_sim = JKU.get_backend('local_statevector_simulator_jku')
+backend_sim = JKU.get_backend('qasm_simulator')
 job = execute(qc, backend_sim)
 result = job.result()
 counts = result.get_counts(qc)
