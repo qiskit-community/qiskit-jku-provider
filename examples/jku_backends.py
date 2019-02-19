@@ -1,4 +1,4 @@
-"""Usage examples for the JKY backends"""
+"""Usage examples for the JKU backends"""
 
 from qiskit_jku_provider import JKUProvider
 
