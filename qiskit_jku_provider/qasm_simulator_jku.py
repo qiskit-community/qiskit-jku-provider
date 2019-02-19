@@ -247,11 +247,11 @@ DEFAULT_SIMULATOR_PATHS = [
 ]
 
 
-class QasmSimulatorJKU(BaseBackend):
+class QasmSimulator(BaseBackend):
     """Python interface to JKU's simulator"""
 
     DEFAULT_CONFIGURATION = {
-        'backend_name': 'local_statevector_simulator_jku',
+        'backend_name': 'qasm_simulator',
         'backend_version': VERSION,
         'url': 'https://github.com/Qiskit/qiskit-jku-provider',
         'simulator': True,
