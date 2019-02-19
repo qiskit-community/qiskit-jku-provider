@@ -1,4 +1,11 @@
-"""Usage examples for the JKU backends"""
+# -*- coding: utf-8 -*-
+
+# Copyright 2019, IBM.
+#
+# This source code is licensed under the Apache License, Version 2.0 found in
+# the LICENSE.txt file in the root directory of this source tree.
+
+"""Usage examples for the JKU Provider"""
 
 from qiskit_jku_provider import JKUProvider
 
@@ -6,7 +13,7 @@ JKU = JKUProvider()
 
 print(JKU.backends())
 
-jku_backend = JKU.get_backend('local_statevector_simulator_jku')
+backend = JKU.get_backend('local_statevector_simulator_jku')
 print(backend)
 
 # gets the name of the backend.
