@@ -51,6 +51,24 @@ job = execute(qc, backend=jku_backend)
 result = job.result()
 print(result.get_counts(qc))
 ```
+## Contribution guidelines
+
+If you'd like to contribute to the Qiskit JKU Simulator, please take a look at our
+[contribution guidelines](.github/CONTRIBUTING.rst). This project adheres to Qiskit's [code of conduct](.github/CODE_OF_CONDUCT.rst). By participating, you are expect to uphold this code.
+
+We use [GitHub issues](https://github.com/Qiskit/qiskit-jku-provider/issues) for tracking requests and bugs.
+Please use our [slack](https://qiskit.slack.com) for discussion and simple questions. To join our Slack community use the [link](https://join.slack.com/t/qiskit/shared_invite/enQtNDc2NjUzMjE4Mzc0LTMwZmE0YTM4ZThiNGJmODkzN2Y2NTNlMDIwYWNjYzA2ZmM1YTRlZGQ3OGM0NjcwMjZkZGE0MTA4MGQ1ZTVmYzk). For questions that are more suited for a forum we use the Qiskit tag in the [Stack Overflow](https://stackoverflow.com/questions/tagged/qiskit).
+
+### Next Steps
+
+Beyond running the JKU simulator, you may want to experiment and compare with other Qiskit simulators. You'll find the repository of different simulators at [Qiskit-Aer](https://github.com/Qiskit/qiskit-aer), or start with the
+[Qiskit-Aer tutorials](https://github.com/Qiskit/qiskit-tutorials/tree/master/qiskit/aer). Once you get the feel, you are welcome to contribute and make the JKU simulator even better. Or you can provide your own simulator and let others examine and contribute to it. For this, see [creating a new provider](https://github.com/Qiskit/qiskit-tutorials/blob/master/qiskit/terra/creating_a_provider.ipynb).
+
+## Authors and Citation
+
+The JKU simulator was created by Alwin Zulehner and Robert Wille from the Johannes Kepler University in Linz, Austria. See [JKU Quantum](http://iic.jku.at/eda/research/quantum/) for more information on the team, or the full [TCAD paper](http://iic.jku.at/files/eda/2018_tcad_advanced_simulation_quantum_computations.pdf) ([bibtex](https://scholar.googleusercontent.com/scholar.bib?q=info:6xYoKH4WuikJ:scholar.google.com/&output=citation&scisig=AAGBfm0AAAAAXGyOXn-s0AYnZr6gDwiuDVtGR_MYId4q&scisf=4&ct=citation&cd=-1&hl=en)) for a presentation of the underlying concepts and algorithm. 
+
+The adaptation of the JKU simulator to Qiskit was done by Gadi Aleksandrowicz. If you use parts of Qiskit, please cite as per the included [BibTeX file](https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib).
 
 ## License
 
