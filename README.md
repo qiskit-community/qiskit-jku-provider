@@ -18,6 +18,7 @@ This provider allows users of Qiskit to use the JKU simulator as a backend.
 Install this module via the PIP tool:
 
 ```
+pip install qiskit
 pip install qiskit_jku_provider
 ```
 
@@ -25,7 +26,7 @@ PIP will handle all dependencies automatically. The latest version of the JKU si
 
 ## Usage
 
-After installing both **qiskit-jku-provider** and **qiskit** itself, the simulator can be used with the following example 
+After installing both **qiskit** and **qiskit-jku-provider**, the simulator can be used with the following example 
 
 ```python
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, execute
