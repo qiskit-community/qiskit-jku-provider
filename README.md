@@ -25,7 +25,7 @@ PIP will handle all dependencies automatically. The latest version of the JKU si
 
 ## Usage
 
-We recommend to follow the [usage example](examples/jku_backend.py). More general information and education on running quantum simulation can be found in the [Qiskit instructions page](https://github.com/Qiskit/qiskit-terra) and the QISKit tutorials.
+We recommend to follow the [usage example](examples/jku_backend.py). More general information and education on running quantum simulation can be found in the [Qiskit instructions page](https://github.com/Qiskit/qiskit-terra) and the Qiskit tutorials.
 
 After installing both **qiskit-jku-provider** and **qiskit** itself, the simulator can be used in Qiskit code by importing the provider
 
