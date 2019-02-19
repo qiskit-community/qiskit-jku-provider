@@ -7,29 +7,30 @@
 
 """Usage examples for the JKU Provider"""
 
+from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, execute
 from qiskit_jku_provider import JKUProvider
 
 JKU = JKUProvider()
 
 print(JKU.backends())
 
-backend = JKU.get_backend('local_statevector_simulator_jku')
-print(backend)
+jku_backend = JKU.get_backend('local_statevector_simulator_jku')
+print(jku_backend)
 
 # gets the name of the backend.
-print(backend.name())
+print(jku_backend.name())
 
 # gets the status of the backend.
-print(backend.status())
+print(jku_backend.status())
 
 # returns the provider of the backend
-print(backend.provider)
+print(jku_backend.provider)
 
 # gets the configuration of the backend.
-print(backend.configuration())
+print(jku_backend.configuration())
 
 # gets the properties of the backend.
-print(backend.properties())
+print(jku_backend.properties())
 
 # Demonstration of Job
 qr = QuantumRegister(2)
