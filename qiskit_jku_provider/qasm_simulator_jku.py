@@ -20,7 +20,6 @@ import subprocess
 
 from .jkujob import JKUJob
 from .jkusimulatorerror import JKUSimulatorError
-from qiskit.qobj import qobj_to_dict
 from qiskit.result import Result
 from qiskit.providers import BaseBackend
 from qiskit.providers.models import BackendConfiguration
@@ -78,10 +77,11 @@ class JKUSimulatorWrapper:
         else:
             self.seed = random.getrandbits(32)
 
-    def run(self, filename):
+    def run(self, qasm):
         """performs the actual external call to the JKU exe"""
+
         cmd = [self.exec,
-               '--simulate_qasm={}'.format(filename),
+               '--simulate_qasm',
                '--seed={}'.format(self.seed),
                '--shots={}'.format(self.shots),
                '--display_statevector',
@@ -90,7 +90,8 @@ class JKUSimulatorWrapper:
             cmd.append('--display_probabilities')
         if not self.silent:
             print(RUN_MESSAGE)
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+
+        output = subprocess.check_output(cmd, input=qasm, stderr=subprocess.STDOUT, universal_newlines=True)
         return output
 
     def convert_operation_to_line(self, op, qubit_names, clbit_names):
@@ -125,25 +126,17 @@ class JKUSimulatorWrapper:
         qasm_content = "\n".join(qasm_file_lines) + "\n"
         return qasm_content
 
-    # convert the qobj circuit to QASM and save as temp file
-    def save_circuit_file(self, filename, qobj_circuit):
-        qasm = self.convert_qobj_circuit_to_jku_qasm(qobj_circuit)
-        with open(filename, "w") as qasm_file:
-            qasm_file.write(qasm)
-
     # runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_experiment(self, config, experiment):
         self.set_config(config, experiment.config)
         # do this before running so we can output warning to the user as soon as possible if needed
         measurement_data = self.compute_measurement_data(experiment)
-        filename = "temp.qasm"
-        self.save_circuit_file(filename, experiment)
         with open("qelib1.inc", "w") as qelib_file:
             qelib_file.write(qelib1)
         self.start_time = time.time()
-        run_output = self.run(filename)
+        qasm = self.convert_qobj_circuit_to_jku_qasm(experiment)
+        run_output = self.run(qasm)
         self.end_time = time.time()
-        os.remove("temp.qasm")
         os.remove("qelib1.inc")
         output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'header': {'name': experiment.header.name,
