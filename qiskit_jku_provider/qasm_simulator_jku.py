@@ -137,7 +137,8 @@ class JKUSimulatorWrapper:
         qasm = self.convert_qobj_circuit_to_jku_qasm(experiment)
         run_output = self.run(qasm)
         self.end_time = time.time()
-        os.remove("qelib1.inc")
+        if os.path.exists("qelib1.inc"):
+            os.remove("qelib1.inc")
         output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'header': {'name': experiment.header.name,
                                   'memory_slots': experiment.config.memory_slots,
