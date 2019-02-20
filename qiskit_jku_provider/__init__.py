@@ -7,7 +7,7 @@
 
 """Local JKU Backend."""
 
-from .qasm_simulator_jku import QasmSimulatorJKU
+from .qasm_simulator_jku import QasmSimulator
 from .jkuprovider import JKUProvider
 
-__version__ = '0.1.0'
+__version__ = '1.1.2'
