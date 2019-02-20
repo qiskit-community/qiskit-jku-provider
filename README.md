@@ -59,7 +59,7 @@ If you'd like to contribute to Qiskit, please take a look at our
 We use [GitHub issues](https://github.com/Qiskit/qiskit-jku-provider
 /issues) for tracking requests and bugs. Please use our [slack](https://qiskit.slack.com) for discussion and simple questions. To join our Slack community use the [link](https://join.slack.com/t/qiskit/shared_invite/enQtNDc2NjUzMjE4Mzc0LTMwZmE0YTM4ZThiNGJmODkzN2Y2NTNlMDIwYWNjYzA2ZmM1YTRlZGQ3OGM0NjcwMjZkZGE0MTA4MGQ1ZTVmYzk). For questions that are more suited for a forum we use the Qiskit tag in the [Stack Exchange](https://quantumcomputing.stackexchange.com/questions/tagged/qiskit).
 
-### Next Steps
+## Next Steps
 
 Beyond running the JKU simulator, you may want to experiment and compare with other Qiskit simulators. You'll find the repository of different simulators at [Qiskit-Aer](https://github.com/Qiskit/qiskit-aer), or start with the
 [Qiskit-Aer tutorials](https://github.com/Qiskit/qiskit-tutorials/tree/master/qiskit/aer). Once you get the feel, you are welcome to contribute and make the JKU simulator even better. Or you can provide your own simulator and let others examine and contribute to it. For this, see [creating a new provider](https://github.com/Qiskit/qiskit-tutorials/blob/master/qiskit/terra/creating_a_provider.ipynb).
