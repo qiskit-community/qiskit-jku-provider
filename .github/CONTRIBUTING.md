@@ -1,25 +1,19 @@
-# Contributing to the project
+# Contributing
 
-You can contribute in many ways to this project.
+If you would like to contribute to the qiskit-jku-provider, there are a number of ways to 
+get involved:
 
+* **Issues**: Issues can be reported with GitHub [issue
+  reporting](https://github.com/Qiskit/qiskit-tutorial/issues) for this repository. 
+  Select `New issue`, fill in a descriptive title, and provide as much detail 
+  as is needed for the issue to be reproduced.
 
-## Issue reporting
-
-This is a good point to start, when you find a problem please add
-it to the [issue tracke](https://github.com/Qiskit/qiskit-ibmq-provider/issues).
-The ideal report should include the steps to reproduce it.
-
-## Doubts solving
-
-To help less advanced users is another wonderful way to start. You can
-help us close some opened issues. This kind of tickets should be
-labeled as ``question``.
-
-## Improvement proposal
-
-If you have an idea for a new feature please open a ticket labeled as
-``enhancement``. If you could also add a piece of code with the idea
-or a partial implementation it would be awesome.
+* **Notebooks**: If you would like to contribute a notebook, please 
+  create a [fork](https://help.github.com/articles/fork-a-repo/) of the repository 
+  from the `master` branch and create a 
+  [pull requests](https://help.github.com/articles/about-pull-requests) for your change.
+  Note that new notebooks should be placed in the relevant part of the 
+  [Community](./community/) section.
 
 ## Contributor License Agreement
 
