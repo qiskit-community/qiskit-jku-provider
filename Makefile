@@ -8,17 +8,15 @@ SHELL := /bin/bash
 sim:
 	cmake . -Bbuild -DSTATIC_LINKING=True
 	make -C build
-# Ignoring generated ones with .py extension.
+
 lint:
-	pylint -rn qiskit/backends/jku test_jku
+	pylint -rn qiskit_jku_provider test
 
 style:
-	pycodestyle --max-line-length=100 qiskit/backends/jku test_jku
+	pycodestyle --max-line-length=100 qiskit_jku_provider test
 
-# Use the -s (starting directory) flag for "unittest discover" is necessary,
-# otherwise the QuantumCircuit header will be modified during the discovery.
 test:
-	python3 -m unittest discover -s test_jku -v
+	python3 -m unittest discover
 
 profile:
 	python3 -m unittest discover -p "profile*.py" -v

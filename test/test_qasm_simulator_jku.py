@@ -5,9 +5,6 @@
 # This source code is licensed under the Apache License, Version 2.0 found in
 # the LICENSE.txt file in the root directory of this source tree.
 
-from test_utils._random_circuit_generator import RandomCircuitGenerator
-from test_utils.common import QiskitTestCase
-
 import random
 import unittest
 
@@ -27,6 +24,10 @@ except ImportError:
     _skip_class = True
 else:
     _skip_class = False
+
+
+from ._random_circuit_generator import RandomCircuitGenerator
+from .common import QiskitTestCase
 
 
 @unittest.skipIf(_skip_class, 'JKU C++ simulator unavailable')
