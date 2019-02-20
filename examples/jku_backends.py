@@ -12,9 +12,8 @@ from qiskit_jku_provider import JKUProvider
 
 JKU = JKUProvider()
 
-print(JKU.backends())
+jku_backend = JKU.get_backend('qasm_simulator')
 
-jku_backend = JKU.get_backend('local_statevector_simulator_jku')
 print(jku_backend)
 
 # gets the name of the backend.
@@ -24,7 +23,7 @@ print(jku_backend.name())
 print(jku_backend.status())
 
 # returns the provider of the backend
-print(jku_backend.provider)
+print(jku_backend.provider())
 
 # gets the configuration of the backend.
 print(jku_backend.configuration())
