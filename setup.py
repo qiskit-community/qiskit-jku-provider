@@ -6,16 +6,17 @@
 # the LICENSE.txt file in the root directory of this source tree.
 
 
-import sys
 import os
 import platform
 from distutils.command.build import build
-from multiprocessing import cpu_count
 from subprocess import call
 
-from setuptools import setup, find_packages
 from setuptools.dist import Distribution
 from setuptools import setup, find_packages
+
+VERSION_PATH = os.path.join(os.path.dirname(__file__), "VERSION.txt")
+with open(VERSION_PATH, "r") as version_file:
+    VERSION = version_file.read().strip()
 
 class JKUSimulatorBuild(build):
     def run(self):
@@ -92,7 +93,7 @@ class BinaryDistribution(Distribution):
     
 setup(
     name="qiskit-jku-provider",
-    version="1.1.2",
+    version=VERSION,
     author="Qiskit Development Team",
     author_email="qiskit@us.ibm.com",
     description="Qiskit simulator whose backend is based on JKU's simulator",

@@ -10,4 +10,4 @@
 from .qasm_simulator_jku import QasmSimulator
 from .jkuprovider import JKUProvider
 
-__version__ = '1.1.2'
+
