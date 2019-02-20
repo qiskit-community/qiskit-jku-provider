@@ -22,7 +22,8 @@ from .jkujob import JKUJob
 from .jkusimulatorerror import JKUSimulatorError
 from qiskit.result import Result
 from qiskit.providers import BaseBackend
-from qiskit.providers.models import BackendConfiguration
+from qiskit.providers.models import BackendConfiguration, BackendStatus
+
 
 
 RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
@@ -323,6 +324,18 @@ class QasmSimulator(BaseBackend):
         # for now, JKU should be ran with shots = 1 and no measurement gates
         # hence, we do not check for those cases as in the default qasm simulator
         return
+
+    def status(self):
+        """Return backend status.
+
+        Returns:
+            BackendStatus: the status of the backend.
+        """
+        return BackendStatus(backend_name=self.name(),
+                             backend_version=self.configuration().backend_version,
+                             operational=True,
+                             pending_jobs=0,
+                             status_msg='')
 
 
 def _get_register_specs(bit_labels):
