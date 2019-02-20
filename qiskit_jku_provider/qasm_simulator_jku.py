@@ -25,7 +25,7 @@ from qiskit.providers import BaseBackend
 from qiskit.providers.models import BackendConfiguration, BackendStatus
 
 
-VERSION = '1.1.2'
+
 RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
 Developer: Alwin Zulehner, Robert Wille
 For more information, please visit http://iic.jku.at/eda/research/quantum_simulation"""
@@ -58,6 +58,9 @@ gate cu1(lambda) a,b {u1(lambda/2) a; cx a,b; u1(-lambda/2) b; cx a,b; u1(lambda
 gate cu3(theta,phi,lambda) c,t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(phi+lambda)/2) t; cx c,t; u3(theta/2,phi,0) t;}
 gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 
+VERSION_PATH = os.path.join(os.path.dirname(__file__), "..", "VERSION.txt")
+with open(VERSION_PATH, "r") as version_file:
+    VERSION = version_file.read().strip()
 
 # this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
