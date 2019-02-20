@@ -19,7 +19,7 @@ from qiskit import BasicAer
 from qiskit_jku_provider import QasmSimulator
 
 try:
-    global_pq_simulator = QasmSimulator(silent = True)
+    global_pq_simulator = QasmSimulator(silent=True)
 except ImportError:
     _skip_class = True
 else:
