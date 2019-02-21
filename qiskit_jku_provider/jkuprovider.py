@@ -5,8 +5,6 @@
 # This source code is licensed under the Apache License, Version 2.0 found in
 # the LICENSE.txt file in the root directory of this source tree.
 
-# pylint: disable=invalid-name, bad-continuation
-
 """Provider for the local JKU backend."""
 
 import logging
@@ -39,7 +37,7 @@ class JKUProvider(BaseProvider):
                         if instance.configuration().get(key) == value}
 
         return list(backends.values())
-    
+
     def backends(self, name=None, **kwargs):
         return list(self.backends_list.values())
 

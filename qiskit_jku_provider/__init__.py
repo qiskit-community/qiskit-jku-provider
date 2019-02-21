@@ -9,5 +9,3 @@
 
 from .qasm_simulator_jku import QasmSimulator
 from .jkuprovider import JKUProvider
-
-
