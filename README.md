@@ -42,7 +42,7 @@ qc.cx(qr[0], qr[1])
 qc.measure(qr, cr)
 
 # Get the JKU backend from the JKU provider
-jku_backend = JKU.get_backend('local_statevector_simulator_jku')
+jku_backend = JKU.get_backend('qasm_simulator')
 
 # Simulate the circuit with the JKU Simulator
 job = execute(qc, backend=jku_backend)
