@@ -96,9 +96,8 @@ class JKUSimulatorWrapper:
             cmd.append('--display_probabilities')
         if not self.silent:
             print(RUN_MESSAGE)
-
         output = subprocess.check_output(cmd, input=qasm, stderr=subprocess.STDOUT,
-                                         universal_newlines=True)
+                                                   universal_newlines=True)
         return output
 
     def convert_operation_to_line(self, op, qubit_names, clbit_names):
@@ -114,7 +113,14 @@ class JKUSimulatorWrapper:
         # some QISKit bug causes snapshot params to be passed as floats
         if name_string == "snapshot":
             params_string = "({})".format(", ".join([str(int(p)) for p in op.params]))
+            for p in op.params:
+                self.max_snapshot_index = max(self.max_snapshot_index, int(p))
         return "{}{} {};".format(name_string, params_string, qubits_string)
+
+    def add_final_snapshot(self, qasm_file_lines, qubit_names):
+        """Adds a final snapshot at the end of the file, e.g. to get the final statevector"""
+        self.max_snapshot_index = self.max_snapshot_index + 1
+        qasm_file_lines.append("snapshot({}) {};".format(self.max_snapshot_index, ", ".join(qubit_names)))
 
     # converts the full qobj circuit (except measurements) to a QASM file JKU can handle
     def convert_qobj_circuit_to_jku_qasm(self, experiment):
@@ -129,10 +135,20 @@ class JKUSimulatorWrapper:
                            "qreg q[{}];".format(qubit_num),
                            "creg c[{}];".format(qubit_num)
                            ]
+        self.max_snapshot_index = 0
         for op in instructions:
             qasm_file_lines.append(self.convert_operation_to_line(op, qubit_names, clbit_names))
+        self.add_final_snapshot(qasm_file_lines, qubit_names)
         qasm_content = "\n".join(qasm_file_lines) + "\n"
         return qasm_content
+
+    def final_statevector(self, run_output):
+        """
+        Retrieves the statevector at the end of the computation
+        """
+        return run_output["snapshots"][str(self.max_snapshot_index)]["statevector"]
+
+
 
     # runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_experiment(self, config, experiment):
@@ -173,6 +189,7 @@ class JKUSimulatorWrapper:
             for snapshot_key, snapshot_data in result['snapshots'].items():
                 result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data,
                                                                           translation_table)
+        result['statevector'] = self.final_statevector(result)
         return result
 
     def convert_snapshot(self, snapshot_data, translation_table):
@@ -190,8 +207,12 @@ class JKUSimulatorWrapper:
                 snapshot_data['probabilities_ket'] = self.convert_probabilities_ket(probs_ket_data)
         return snapshot_data
 
+    def to_qiskit_complex(self, num_string):
+        num = complex(num_string.replace('i', 'j')) #first obtain an actual number
+        return [num.real, num.imag]
+
     def convert_statevector_data(self, statevector, translation_table):
-        return [complex(statevector[translation_table[i]].replace('i', 'j'))
+        return [self.to_qiskit_complex(statevector[translation_table[i]])
                 for i in range(len(translation_table))]
 
     def convert_probabilities(self, probs_data, translation_table):
@@ -204,7 +225,8 @@ class JKUSimulatorWrapper:
         result = {}
         for qubits, count in counts.items():
             clbits = self.qubits_to_clbits(qubits, measurement_data)
-            result[clbits] = result.get(clbits, 0) + count
+            if clbits is not None:
+                result[clbits] = result.get(clbits, 0) + count
         return result
 
     # converting the actual measurement results for all qubits to clbits the user expects to see
@@ -213,6 +235,8 @@ class JKUSimulatorWrapper:
         for (qubit, clbit) in measurement_data['mapping'].items():
             clbits[clbit] = qubits[qubit]
         s = "".join(clbits)[::-1]
+        if s == '':
+            return None
         return hex(int(s, 2))
 
     # finding the data relevant to measurements and clbits in the qobj_circuit
