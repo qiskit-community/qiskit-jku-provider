@@ -6,8 +6,8 @@ SHELL := /bin/bash
 .PHONY: sim style lint test profile dist
 
 sim:
-	cmake . -Bbuild -DSTATIC_LINKING=True
-	make -C build
+	cmake . -Bbuild/lib/qiskit_jku_provider -DSTATIC_LINKING=True
+	make -C build/lib/qiskit_jku_provider
 
 lint:
 	pylint -rn qiskit_jku_provider test
