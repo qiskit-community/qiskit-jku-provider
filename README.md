@@ -65,7 +65,7 @@ Beyond running the JKU simulator, you may want to experiment and compare with ot
 
 ## Authors and Citation
 
-The JKU simulator was created by Alwin Zulehner and Robert Wille from the Johannes Kepler University in Linz, Austria. See [JKU Quantum](http://iic.jku.at/eda/research/quantum/) for more information on the team, or the full [TCAD paper](http://iic.jku.at/files/eda/2018_tcad_advanced_simulation_quantum_computations.pdf) ([bibtex](https://scholar.googleusercontent.com/scholar.bib?q=info:6xYoKH4WuikJ:scholar.google.com/&output=citation&scisig=AAGBfm0AAAAAXGyOXn-s0AYnZr6gDwiuDVtGR_MYId4q&scisf=4&ct=citation&cd=-1&hl=en)) for a presentation of the underlying concepts and algorithm. 
+The JKU simulator was created by Alwin Zulehner and Robert Wille from the Johannes Kepler University in Linz, Austria. See [JKU Quantum](http://iic.jku.at/eda/research/quantum/) for more information on the team, or the full [TCAD paper](http://iic.jku.at/files/eda/2018_tcad_advanced_simulation_quantum_computations.pdf) for a presentation of the underlying concepts and algorithm. 
 
 The adaptation of the JKU simulator to Qiskit was done by Gadi Aleksandrowicz. If you use parts of Qiskit, please cite as per the included [BibTeX file](https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib).
 
