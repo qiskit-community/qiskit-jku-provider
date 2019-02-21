@@ -45,5 +45,6 @@ class TestQasmSimulatorJKUBasic(QiskitTestCase):
                   '110 110': shots / 8, '001 001': shots / 8}
         self.assertDictAlmostEqual(counts, target, threshold)
 
+
 if __name__ == '__main__':
     unittest.main()
