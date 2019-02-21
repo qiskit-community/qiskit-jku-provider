@@ -287,7 +287,7 @@ class QasmSimulator(BaseBackend):
         'local': True,
         'description': 'JKU C++ simulator',
         'basis_gates': ['u0', 'u1', 'u2', 'u3', 'cx', 'x', 'y', 'z', 'h', 's', 't', 'snapshot'],
-        'memory': True,
+        'memory': False,
         'n_qubits': 30,
         'conditional': False,
         'max_shots': 100000,
