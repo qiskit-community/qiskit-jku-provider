@@ -20,14 +20,14 @@ addons:
 
 install:
   - pip install "qiskit>=0.7,<0.8"
-
-script:
-  - true
+  - pip install -r requirements-dev.txt
 
 matrix:
   include:
-  - script:
+  - name: style
+    script:
     - make style
-  - script:
+  - name: test Python 3.5
+    script:
     - make sim
     - make test
