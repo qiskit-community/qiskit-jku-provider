@@ -20,7 +20,14 @@ addons:
 
 install:
   - pip install "qiskit>=0.7,<0.8"
-  - make sim
 
 script:
   - true
+
+matrix:
+  include:
+  - script:
+    - make style
+  - script:
+    - make sim
+    - make test
