@@ -53,7 +53,7 @@ print(result.get_counts(qc))
 ```
 ## Contribution Guidelines
 
-If you'd like to contribute to Qiskit, please take a look at our
+If you'd like to contribute to the JKU simulator, please take a look at our
 [contribution guidelines](.github/CONTRIBUTING.md). This project adheres to Qiskit's [code of conduct](.github/CODE_OF_CONDUCT.md). By participating, you are expect to uphold to this code.
 
 We use [GitHub issues](https://github.com/Qiskit/qiskit-jku-provider/issues) for tracking requests and bugs. Please use our [slack](https://qiskit.slack.com) for discussion and simple questions. To join our Slack community use the [link](https://join.slack.com/t/qiskit/shared_invite/enQtNDc2NjUzMjE4Mzc0LTMwZmE0YTM4ZThiNGJmODkzN2Y2NTNlMDIwYWNjYzA2ZmM1YTRlZGQ3OGM0NjcwMjZkZGE0MTA4MGQ1ZTVmYzk). For questions that are more suited for a forum we use the Qiskit tag in the [Stack Exchange](https://quantumcomputing.stackexchange.com/questions/tagged/qiskit).
@@ -65,7 +65,7 @@ Beyond running the JKU simulator, you may want to experiment and compare with ot
 
 ## Authors and Citation
 
-The JKU simulator was created by Alwin Zulehner and Robert Wille from the Johannes Kepler University in Linz, Austria. See [JKU Quantum](http://iic.jku.at/eda/research/quantum/) for more information on the team, or the full [TCAD paper](http://iic.jku.at/files/eda/2018_tcad_advanced_simulation_quantum_computations.pdf) for a presentation of the underlying concepts and algorithm. 
+The JKU simulator was created by Alwin Zulehner and Robert Wille from the Johannes Kepler University in Linz, Austria. See [JKU Quantum](http://iic.jku.at/eda/research/quantum/) for more information on the team, or the full [TCAD paper](http://iic.jku.at/files/eda/2018_tcad_advanced_simulation_quantum_computations.pdf) ([bibtex](./jku_tcad.bib)) for a presentation of the underlying concepts and algorithm. 
 
 The adaptation of the JKU simulator to Qiskit was done by Gadi Aleksandrowicz. If you use parts of Qiskit, please cite as per the included [BibTeX file](https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib).
 
