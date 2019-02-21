@@ -10,14 +10,13 @@
 import unittest
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit import execute
-from qiskit.extensions.simulator import snapshot
 
 from .common import QiskitTestCase
 from qiskit_jku_provider import QasmSimulator
 
 
-class JKUStatevectorTest(QiskitTestCase):
-    """Test JKU's statevector capatbilities."""
+class JKUSnapshotTest(QiskitTestCase):
+    """Test JKU's statevector return capatbilities."""
 
     def setUp(self):
         super().setUp()
@@ -26,9 +25,8 @@ class JKUStatevectorTest(QiskitTestCase):
         self.q_circuit = QuantumCircuit(qr)
         self.q_circuit.h(qr[0])
         self.q_circuit.cx(qr[0], qr[1])
-        self.q_circuit.snapshot(1)
 
-    def test_statevector_simulator(self):
+    def test_statevector_output(self):
         """Test final state vector for single circuit run."""
         result = execute(self.q_circuit, backend=self.backend).result()
         self.assertEqual(result.success, True)
