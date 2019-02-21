@@ -97,7 +97,7 @@ class JKUSimulatorWrapper:
         if not self.silent:
             print(RUN_MESSAGE)
         output = subprocess.check_output(cmd, input=qasm, stderr=subprocess.STDOUT,
-                                                   universal_newlines=True)
+                                         universal_newlines=True)
         return output
 
     def convert_operation_to_line(self, op, qubit_names, clbit_names):
@@ -120,7 +120,8 @@ class JKUSimulatorWrapper:
     def add_final_snapshot(self, qasm_file_lines, qubit_names):
         """Adds a final snapshot at the end of the file, e.g. to get the final statevector"""
         self.max_snapshot_index = self.max_snapshot_index + 1
-        qasm_file_lines.append("snapshot({}) {};".format(self.max_snapshot_index, ", ".join(qubit_names)))
+        qubits = ", ".join(qubit_names)
+        qasm_file_lines.append("snapshot({}) {};".format(self.max_snapshot_index, qubits))
 
     # converts the full qobj circuit (except measurements) to a QASM file JKU can handle
     def convert_qobj_circuit_to_jku_qasm(self, experiment):
@@ -147,8 +148,6 @@ class JKUSimulatorWrapper:
         Retrieves the statevector at the end of the computation
         """
         return run_output["snapshots"][str(self.max_snapshot_index)]["statevector"]
-
-
 
     # runs the qobj circuit on the JKU exe while performing input/output conversions
     def run_experiment(self, config, experiment):
@@ -208,7 +207,7 @@ class JKUSimulatorWrapper:
         return snapshot_data
 
     def to_qiskit_complex(self, num_string):
-        num = complex(num_string.replace('i', 'j')) #first obtain an actual number
+        num = complex(num_string.replace('i', 'j'))  # first obtain an actual number
         return [num.real, num.imag]
 
     def convert_statevector_data(self, statevector, translation_table):
