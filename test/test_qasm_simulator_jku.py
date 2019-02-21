@@ -119,7 +119,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         qc.measure(qr[1], cr[1])
         shots = 100
 
-        counts_pq, counts_qk, result = self.run_on_simulators(qc, global_pq_simulator, qk_simulator, shots=shots, seed=1)
+        counts_pq, counts_qk, result = self.run_on_simulators(qc, global_pq_simulator,
+                                                              qk_simulator, shots=shots, seed=1)
         self.assertGreater(result[1], 0.01)
 
         cr1 = ClassicalRegister(1)
@@ -129,7 +130,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         qc.measure(qr[0], cr1[0])
         qc.measure(qr[1], cr2[0])
 
-        counts_pq, counts_qk, result = self.run_on_simulators(qc, global_pq_simulator, qk_simulator, shots=shots, seed=1)
+        counts_pq, counts_qk, result = self.run_on_simulators(qc, global_pq_simulator,
+                                                              qk_simulator, shots=shots, seed=1)
         self.log.info('chi2_contingency: %s', str(result))
         self.assertGreater(result[1], 0.01)
 

@@ -7,24 +7,23 @@
 
 """Backend for the JKU C++ simulator."""
 
-import time
 import itertools
-import operator
-import random
-import uuid
-import logging
-import platform
-import os
 import json
+import logging
+import operator
+import os
+import platform
+import random
 import subprocess
+import time
+import uuid
+
+from qiskit.providers import BaseBackend
+from qiskit.providers.models import BackendConfiguration, BackendStatus
+from qiskit.result import Result
 
 from .jkujob import JKUJob
 from .jkusimulatorerror import JKUSimulatorError
-from qiskit.result import Result
-from qiskit.providers import BaseBackend
-from qiskit.providers.models import BackendConfiguration, BackendStatus
-
-
 
 RUN_MESSAGE = """DD-based simulator by JKU Linz, Austria
 Developer: Alwin Zulehner, Robert Wille
@@ -51,16 +50,19 @@ gate cz a,b { h b; cx a,b; h b; }
 gate cy a,b { sdg b; cx a,b; s b; }
 gate swap a,b { cx a,b; cx b,a; cx a,b; }
 gate ch a,b {h b; sdg b; cx a,b; h b; t b; cx a,b; t b; h b; s b; x b; s a;}
-gate ccx a,b,c {h c; cx b,c; tdg c; cx a,c; t c; cx b,c; tdg c; cx a,c; t b; t c; h c; cx a,b; t a; tdg b; cx a,b;}
+gate ccx a,b,c {h c; cx b,c; tdg c; cx a,c; t c; cx b,c; tdg c; cx a,c; t b; t c; h c; cx a,b; \
+t a; tdg b; cx a,b;}
 gate cswap a,b,c {cx c,b; ccx a,b,c; cx c,b;}
 gate crz(lambda) a,b {u1(lambda/2) b; cx a,b; u1(-lambda/2) b; cx a,b;}
 gate cu1(lambda) a,b {u1(lambda/2) a; cx a,b; u1(-lambda/2) b; cx a,b; u1(lambda/2) b;}
-gate cu3(theta,phi,lambda) c,t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(phi+lambda)/2) t; cx c,t; u3(theta/2,phi,0) t;}
+gate cu3(theta,phi,lambda) c,t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(phi+lambda)/2) t; \
+cx c,t; u3(theta/2,phi,0) t;}
 gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 
 VERSION_PATH = os.path.join(os.path.dirname(__file__), "..", "VERSION.txt")
 with open(VERSION_PATH, "r") as version_file:
     VERSION = version_file.read().strip()
+
 
 # this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
@@ -95,7 +97,8 @@ class JKUSimulatorWrapper:
         if not self.silent:
             print(RUN_MESSAGE)
 
-        output = subprocess.check_output(cmd, input=qasm, stderr=subprocess.STDOUT, universal_newlines=True)
+        output = subprocess.check_output(cmd, input=qasm, stderr=subprocess.STDOUT,
+                                         universal_newlines=True)
         return output
 
     def convert_operation_to_line(self, op, qubit_names, clbit_names):
@@ -108,7 +111,8 @@ class JKUSimulatorWrapper:
             params_string = ""
         if name_string == "measure":  # special syntax
             return "measure {} -> {};".format(qubit_names[op.qubits[0]], clbit_names[op.memory[0]])
-        if name_string == "snapshot":  # some QISKit bug causes snapshot params to be passed as floats
+        # some QISKit bug causes snapshot params to be passed as floats
+        if name_string == "snapshot":
             params_string = "({})".format(", ".join([str(int(p)) for p in op.params]))
         return "{}{} {};".format(name_string, params_string, qubits_string)
 
@@ -159,24 +163,27 @@ class JKUSimulatorWrapper:
     def parse_output(self, run_output, measurement_data):
         result = json.loads(run_output)
         qubits = measurement_data['qubits_num']
-        translation_table = [0] * 2 ** qubits  # QISKit qubit order is reversed, so we fix accordingly
+        # QISKit qubit order is reversed, so we fix accordingly
+        translation_table = [0] * 2 ** qubits
         for n in range(2 ** qubits):
             translation_table[n] = int(bin(n)[2:].rjust(qubits, '0')[::-1], 2)
         if 'counts' in result:
             result['counts'] = self.convert_counts(result['counts'], measurement_data)
         if 'snapshots' in result:
             for snapshot_key, snapshot_data in result['snapshots'].items():
-                result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data, translation_table)
+                result['snapshots'][snapshot_key] = self.convert_snapshot(snapshot_data,
+                                                                          translation_table)
         return result
 
     def convert_snapshot(self, snapshot_data, translation_table):
         if 'statevector' in snapshot_data:
-            snapshot_data['statevector'] = self.convert_statevector_data(snapshot_data['statevector'],
-                                                                         translation_table)
+            snapshot_data['statevector'] = self.convert_statevector_data(
+                snapshot_data['statevector'], translation_table)
         if 'probabilities' in snapshot_data:
             probs_data = snapshot_data.pop('probabilities')
             if 'probabilities' in self.additional_output_data:
-                snapshot_data['probabilities'] = self.convert_probabilities(probs_data, translation_table)
+                snapshot_data['probabilities'] = self.convert_probabilities(probs_data,
+                                                                            translation_table)
         if 'probabilities_ket' in snapshot_data:
             probs_ket_data = snapshot_data.pop('probabilities_ket')
             if 'probabilities_ket' in self.additional_output_data:
@@ -184,7 +191,8 @@ class JKUSimulatorWrapper:
         return snapshot_data
 
     def convert_statevector_data(self, statevector, translation_table):
-        return [complex(statevector[translation_table[i]].replace('i', 'j')) for i in range(len(translation_table))]
+        return [complex(statevector[translation_table[i]].replace('i', 'j'))
+                for i in range(len(translation_table))]
 
     def convert_probabilities(self, probs_data, translation_table):
         return [probs_data[translation_table[i]] for i in range(len(translation_table))]
@@ -224,8 +232,8 @@ class JKUSimulatorWrapper:
                 for qubit in op.qubits:
                     if qubit in measurement_data['mapping'].keys() and not op.name == 'snapshot':
                         raise JKUSimulatorError(
-                            "Error: qubit {} was used after being measured. This is currently not supported by JKU".format(
-                                qubit))
+                            "Error: qubit {} was used after being measured. This is currently "
+                            "not supported by JKU".format(qubit))
         return measurement_data
 
 
