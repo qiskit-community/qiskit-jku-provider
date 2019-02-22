@@ -59,7 +59,6 @@ gate cu3(theta,phi,lambda) c,t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(ph
 cx c,t; u3(theta/2,phi,0) t;}
 gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 
-VERSION = 0.1.0
 
 # this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
@@ -271,6 +270,16 @@ DEFAULT_SIMULATOR_PATHS = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),
                                  'jku_simulator' + EXTENSION)),
 ]
+
+VERSION_PATHS = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "VERSION.txt")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "VERSION.txt")),
+]
+
+for version_path in VERSION_PATHS:
+    if os.path.exists(version_path):
+        with open(version_path, "r") as version_file:
+            VERSION = version_file.read().strip()
 
 
 class QasmSimulator(BaseBackend):
