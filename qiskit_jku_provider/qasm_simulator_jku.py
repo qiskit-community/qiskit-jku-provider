@@ -59,10 +59,7 @@ gate cu3(theta,phi,lambda) c,t {u1((lambda-phi)/2) t; cx c,t; u3(-theta/2,0,-(ph
 cx c,t; u3(theta/2,phi,0) t;}
 gate rzz(theta) a,b {cx a,b; u1(theta) b; cx a,b;}\n"""
 
-VERSION_PATH = os.path.join(os.path.dirname(__file__), "..", "VERSION.txt")
-with open(VERSION_PATH, "r") as version_file:
-    VERSION = version_file.read().strip()
-
+VERSION = 0.1.0
 
 # this class handles the actual technical details of converting to and from QISKit style data
 class JKUSimulatorWrapper:
