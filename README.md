@@ -71,4 +71,4 @@ The adaptation of the JKU simulator to Qiskit was done by Gadi Aleksandrowicz. I
 
 ## License
 
-[Apache License 2.0](LICENSE.txt)
+[Apache License 2.0](./LICENSE)
