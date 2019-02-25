@@ -12,7 +12,7 @@ assignees: ''
 
 ### Informations
 
-- **Qiskit version**:
+- **Qiskit-JKU-Provider version**:
 - **Python version**:
 - **Operating system**:
 
