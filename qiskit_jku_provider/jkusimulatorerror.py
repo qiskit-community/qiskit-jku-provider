@@ -10,7 +10,7 @@ Exception for errors raised by JKU simulator.
 """
 
 
-from qiskit.exceptions import QiskitError
+from qiskit import QiskitError
 
 
 class JKUSimulatorError(QiskitError):
