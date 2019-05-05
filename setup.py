@@ -112,7 +112,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering",
     ],
-    install_requires=['qiskit-terra>=0.7'],
+    install_requires=['qiskit-terra>=0.8'],
     keywords="qiskit quantum jku_simulator",
     packages=find_packages(exclude=['test*']),
     include_package_data=True,
