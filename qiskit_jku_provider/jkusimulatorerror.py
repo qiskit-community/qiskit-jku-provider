@@ -9,7 +9,8 @@
 Exception for errors raised by JKU simulator.
 """
 
-from qiskit import QiskitError
+
+from qiskit.exceptions import QiskitError
 
 
 class JKUSimulatorError(QiskitError):
