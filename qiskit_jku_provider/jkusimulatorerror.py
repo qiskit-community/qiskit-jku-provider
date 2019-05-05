@@ -9,10 +9,10 @@
 Exception for errors raised by JKU simulator.
 """
 
-from qiskit import QISKitError
+from qiskit import QiskitError
 
 
-class JKUSimulatorError(QISKitError):
+class JKUSimulatorError(QiskitError):
     """Class for errors raised by the JKU simulator."""
 
     def __init__(self, *message):
