@@ -65,8 +65,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         cls.rqg = random_circuits
 
     def run_on_simulators(self, qc, pq_simulator, qk_simulator, shots, seed):
-        job_pq = execute(qc, pq_simulator, shots=shots, seed=seed)
-        job_qk = execute(qc, qk_simulator, shots=shots, seed=seed)
+        job_pq = execute(qc, pq_simulator, shots=shots, seed_simulator=seed)
+        job_qk = execute(qc, qk_simulator, shots=shots, seed_simulator=seed)
         counts_pq = job_pq.result().get_counts()
         counts_qk = job_qk.result().get_counts()
         states = counts_qk.keys() | counts_pq.keys()
@@ -140,8 +140,8 @@ class TestQasmSimulatorJKU(QiskitTestCase):
         for circuit in self.rqg.get_circuits(format_='QuantumCircuit'):
             self.log.info(circuit.qasm())
             shots = 100
-            job_pq = execute(circuit, global_pq_simulator, shots=shots, seed=1)
-            job_qk = execute(circuit, qk_simulator, shots=shots, seed=1)
+            job_pq = execute(circuit, global_pq_simulator, shots=shots, seed_simulator=1)
+            job_qk = execute(circuit, qk_simulator, shots=shots, seed_simulator=1)
             result_pq = job_pq.result()
             result_qk = job_qk.result()
             counts_pq = result_pq.get_counts()
