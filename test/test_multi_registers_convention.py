@@ -16,6 +16,7 @@ from qiskit.quantum_info import state_fidelity, basis_state
 from qiskit.test import QiskitTestCase
 from qiskit_jku_provider import QasmSimulator
 
+
 class TestCircuitMultiRegs(QiskitTestCase):
     """QuantumCircuit Qasm tests."""
 
