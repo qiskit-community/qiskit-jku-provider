@@ -19,7 +19,7 @@ addons:
     - libmpfrc++-dev
 
 install:
-  - pip install "qiskit>=0.7,<0.8"
+  - pip install "qiskit>=0.8"
   - pip install -r requirements-dev.txt
 
 matrix:

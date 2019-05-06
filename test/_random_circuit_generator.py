@@ -11,7 +11,7 @@ import random
 
 import numpy
 
-from qiskit import (qasm, unroll, ClassicalRegister, QuantumCircuit,
+from qiskit import (qasm, ClassicalRegister, QuantumCircuit,
                     QuantumRegister)
 
 
@@ -153,9 +153,9 @@ class RandomCircuitGenerator(object):
             for i_size, size in enumerate(reg_sizes):
                 cr_name = 'cr' + str(i_size)
                 qr_name = 'qr' + str(i_size)
-                creg = ClassicalRegister(size, cr_name)
-                qreg = QuantumRegister(size, qr_name)
-                circuit.add(qreg, creg)
+                creg = ClassicalRegister(int(size), cr_name)
+                qreg = QuantumRegister(int(size), qr_name)
+                circuit.add_register(qreg, creg)
             while depth_cnt > 0:
                 # TODO: replace choices with random.choices() when python 3.6
                 # is required.
@@ -250,7 +250,7 @@ class RandomCircuitGenerator(object):
         return not any((n_qubits >= self.op_signature[opName]['nregs'] > 0
                         for opName in basis))
 
-    def get_circuits(self, format_='dag'):
+    def get_circuits(self, format_='QuantumCircuit'):
         """Get the compiled circuits generated.
 
         Args:
@@ -267,34 +267,11 @@ class RandomCircuitGenerator(object):
             for circuit in self.circuit_list:
                 qasm_list.append(circuit.qasm())
             return qasm_list
-        elif format_ == 'qobj':
-            json_list = []
-            for circuit in self.circuit_list:
-                node_circuit = qasm.Qasm(data=circuit.qasm()).parse()
-                unrolled_circuit = unroll.Unroller(
-                    node_circuit,
-                    unroll.JsonBackend(self.basis_gates))
-                json_list.append(unrolled_circuit.execute())
-            return json_list
         elif format_ == 'QuantumCircuit':
             qc_list = []
             for circuit in self.circuit_list:
                 qc_list.append(circuit)
-                # node_circuit = qasm.Qasm(data=circuit.qasm()).parse()
-                # unrolled_circuit = unroll.Unroller(
-                #     node_circuit,
-                #     unroll.CircuitBackend(self.basis_gates))
-                # qc_list.append(unrolled_circuit.execute())
             return qc_list
-        # elif format is 'dag':
-        #     qc_list = []
-        #     for circuit in self.circuit_list:
-        #         node_circuit = qasm.Qasm(data=circuit.qasm()).parse()
-        #         unrolled_circuit = unroll.Unroller(
-        #             node_circuit,
-        #             unroll.DAGBackend(self.basis_gates))
-        #         qc_list.append(unrolled_circuit.execute())
-        #     return qc_list
         else:
             raise NameError('Unrecognized circuit output format: "{}"'.format(
                 format_))

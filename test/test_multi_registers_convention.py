@@ -11,9 +11,9 @@
 """Test Qiskit's QuantumCircuit class for multiple registers."""
 
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
-from qiskit import compile
+from qiskit import execute
 from qiskit.quantum_info import state_fidelity, basis_state
-from .common import QiskitTestCase
+from qiskit.test import QiskitTestCase
 from qiskit_jku_provider import QasmSimulator
 
 
@@ -38,15 +38,13 @@ class TestCircuitMultiRegs(QiskitTestCase):
         qc = circ + meas
 
         backend_sim = QasmSimulator(silent=True)
-        qobj_qc = compile(qc, backend_sim, seed_mapper=34342)
-        qobj_circ = compile(circ, backend_sim, seed_mapper=3438)
 
-        result = backend_sim.run(qobj_qc).result()
+        result = execute(qc, backend_sim, seed_transpiler=34342).result()
         counts = result.get_counts(qc)
 
         target = {'01 10': 1024}
 
-        result = backend_sim.run(qobj_circ).result()
+        result = execute(circ, backend_sim, seed_transpiler=3438).result()
         state = result.get_statevector(circ)
 
         self.assertEqual(counts, target)
