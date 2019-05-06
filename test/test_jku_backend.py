@@ -7,9 +7,8 @@
 
 """Test JKU backend."""
 
-from qiskit import compile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
-
+from qiskit import execute
 from qiskit_jku_provider import QasmSimulator
 
 from .common import QiskitTestCase
@@ -39,9 +38,7 @@ class JKUBackendTestCase(QiskitTestCase):
 
     def test_run_circuit(self):
         """Test running a single circuit."""
-        qobj = compile(bell(), self.backend)
-        job = self.backend.run(qobj)
-        result = job.result()
+        result = execute(bell(), self.backend, seed_transpiler=34342).result()
         self.assertEqual(result.success, True)
         return result
 

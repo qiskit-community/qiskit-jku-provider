@@ -10,9 +10,9 @@
 import unittest
 import os
 from qiskit import QuantumCircuit
-from qiskit import compile
 from .common import QiskitTestCase
 from qiskit_jku_provider import QasmSimulator
+from qiskit import execute
 
 
 class TestQasmSimulatorJKUBasic(QiskitTestCase):
@@ -24,19 +24,17 @@ class TestQasmSimulatorJKUBasic(QiskitTestCase):
         qasm_filename = os.path.join(os.path.dirname(__file__), 'qasms', 'example.qasm')
         compiled_circuit = QuantumCircuit.from_qasm_file(qasm_filename)
         compiled_circuit.name = 'test'
-        self.qobj = compile(compiled_circuit, backend=self.backend)
+        self.circuit = compiled_circuit
 
     def test_qasm_simulator_single_shot(self):
         """Test single shot run."""
-        shots = 1
-        self.qobj.config.shots = shots
-        result = self.backend.run(self.qobj).result()
+        result = execute(self.circuit, self.backend, seed_transpiler=34342, shots=1).result()
         self.assertEqual(result.success, True)
 
     def test_qasm_simulator(self):
         """Test data counts output for single circuit run against reference."""
-        result = self.backend.run(self.qobj).result()
         shots = 1024
+        result = execute(self.circuit, self.backend, seed_transpiler=34342, shots=shots).result()
         threshold = 0.04 * shots
         counts = result.get_counts('test')
         target = {'100 100': shots / 8, '011 011': shots / 8,
