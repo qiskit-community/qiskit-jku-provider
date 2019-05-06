@@ -10,10 +10,9 @@
 
 """Test Qiskit's QuantumCircuit class for multiple registers."""
 
-import qiskit
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit import execute
-from qiskit.quantum_info import state_fidelity, process_fidelity, Pauli, basis_state
+from qiskit.quantum_info import state_fidelity, basis_state
 from qiskit.test import QiskitTestCase
 from qiskit_jku_provider import QasmSimulator
 
@@ -38,14 +37,12 @@ class TestCircuitMultiRegs(QiskitTestCase):
         qc = circ + meas
 
         backend_sim = QasmSimulator(silent=True)
-        # backend_sim = qiskit.providers.aer.QasmSimulator()
 
         result = execute(qc, backend_sim, seed_transpiler=34342).result()
         counts = result.get_counts(qc)
 
         target = {'01 10': 1024}
 
-        # backend_sim = qiskit.providers.aer.StatevectorSimulator()
         result = execute(circ, backend_sim, seed_transpiler=3438).result()
         state = result.get_statevector(circ)
 
