@@ -1,4 +1,4 @@
-/*
+/* 
 DD-based simulator by JKU Linz, Austria
 
 Developer: Alwin Zulehner, Robert Wille
