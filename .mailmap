@@ -1,0 +1,14 @@
+# For documentation see: https://github.com/git/git/blob/master/Documentation/mailmap.txt
+# Full names and mail addresses are taken from the Github contributor profile page, or from 
+# https://api.github.com/users/xxxxx/events/public when the info does not show in the public profile page
+# Individual contributors should check and see if all their names/emails are aliased correctly
+
+Gadi Aleksandrowicz <gadial@gmail.com>
+Jay Gambetta <jay.gambetta@us.ibm.com>
+Juan Gomez <atilag@gmail.com>
+Paul Kassebaum <paul.kassebaum@ibm.com>
+Yehuda Naveh <naveh@il.ibm.com>
+Diego M. Rodríguez <diego.plan9@gmail.com>
+Matthew Treinish <mtreinish@kortar.org>
+Robert Wille <robert.wille@jku.at>
+Alwin Zulehner <azulehner@ica.jku.at>
