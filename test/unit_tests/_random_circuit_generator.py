@@ -70,7 +70,7 @@ class RandomCircuitGenerator(object):
             'cy': {'nregs': 2, 'nparams': None},
             'cz': {'nregs': 2, 'nparams': None},
             'h': {'nregs': 1, 'nparams': None},
-            'iden': {'nregs': 1, 'nparams': None},
+            #'iden': {'nregs': 1, 'nparams': None},
             'measure': {'nregs': 0, 'nparams': None},
             'reset': {'nregs': 1, 'nparams': None},
             'rx': {'nregs': 1, 'nparams': 1},
@@ -209,7 +209,7 @@ class RandomCircuitGenerator(object):
                     elif op_name == 'barrier':
                         ireg = random.randint(0, n_registers-1)
                         qreg = circuit.qregs[ireg]
-                        bar_args = [(qreg, mi) for mi in range(qreg.size)]
+                        bar_args = [qreg[mi] for mi in range(qreg.size)]
                         operator(*bar_args)
                     else:
                         # select random register

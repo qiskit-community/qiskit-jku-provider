@@ -90,6 +90,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# ASV
+.asv
+
 # Spyder project settings
 .spyderproject
 .spyproject

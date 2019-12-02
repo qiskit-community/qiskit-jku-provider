@@ -6,9 +6,9 @@ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 # Set default build type to Release
 IF(NOT CMAKE_BUILD_TYPE)
-	SET(CMAKE_BUILD_TYPE Release CACHE STRING
-		"Choose the type of build, options are: Debug Release"
-		FORCE)
+    SET(CMAKE_BUILD_TYPE Release CACHE STRING
+        "Choose the type of build, options are: Debug Release"
+        FORCE)
 ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_REENTRANT -DVERSION=\"$(VERSION)\"")
@@ -56,7 +56,7 @@ add_executable(jku_simulator
     src/QMDDreorder.cpp)
 
 set_target_properties(jku_simulator PROPERTIES
-	LINKER_LANGUAGE CXX
+    LINKER_LANGUAGE CXX
     CXX_STANDARD 14)
 
 IF(STATIC_LINKING)
@@ -69,3 +69,5 @@ target_link_libraries(jku_simulator ${JKU_LIBS})
 
 include_directories(src)
 
+file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
