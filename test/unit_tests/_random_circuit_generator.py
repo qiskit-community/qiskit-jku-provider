@@ -70,7 +70,6 @@ class RandomCircuitGenerator(object):
             'cy': {'nregs': 2, 'nparams': None},
             'cz': {'nregs': 2, 'nparams': None},
             'h': {'nregs': 1, 'nparams': None},
-            #'iden': {'nregs': 1, 'nparams': None},
             'measure': {'nregs': 0, 'nparams': None},
             'reset': {'nregs': 1, 'nparams': None},
             'rx': {'nregs': 1, 'nparams': 1},
