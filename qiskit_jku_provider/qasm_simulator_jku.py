@@ -121,7 +121,7 @@ class JKUSimulatorWrapper:
         qasm_file_lines.append("snapshot({}) {};".format(self.max_snapshot_index, qubits))
 
     # converts the full qobj circuit (except measurements) to a QASM file JKU can handle
-    def convert_qobj_circuit_to_jku_qasm(self, experiment, qelib_inc_name = "qelib1.inc"):
+    def convert_qobj_circuit_to_jku_qasm(self, experiment, qelib_inc_name="qelib1.inc"):
         instructions = experiment.instructions
         qubit_num = len(experiment.header.qubit_labels)
         clbit_num = len(experiment.header.clbit_labels)
@@ -151,11 +151,11 @@ class JKUSimulatorWrapper:
         self.set_config(config, experiment.config)
         # do this before running so we can output warning to the user as soon as possible if needed
         measurement_data = self.compute_measurement_data(experiment)
-        
+
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as qelib_file:
             qelib_inc_name = qelib_file.name
             qelib_file.write(qelib1)
-            
+
         self.start_time = time.time()
         qasm = self.convert_qobj_circuit_to_jku_qasm(experiment, qelib_inc_name)
         run_output = self.run(qasm)
