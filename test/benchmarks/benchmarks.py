@@ -19,7 +19,7 @@ class QasmSimulatorJKUBenchmarkSuite:
     params = ["grover_12.qasm", "sym9_193.qasm", "plus63mod4096_163.qasm", "z4_268.qasm",
               "clip_206.qasm"]
     timeout = 1800
-    
+
     def setup(self, filename):
         self.seed = 88
         self.backend = QasmSimulator(silent=True)
