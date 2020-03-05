@@ -18,7 +18,7 @@ class QasmSimulatorJKUBenchmarkSuite:
     """Runs the Basic qasm_simulator tests from Terra on JKU."""
     params = ["grover_12.qasm", "sym9_193.qasm", "plus63mod4096_163.qasm", "z4_268.qasm",
               "clip_206.qasm"]
-    param_names = params
+    param_names = ["circuit_name"]
     timeout = 1800
 
     def setup(self, filename):
