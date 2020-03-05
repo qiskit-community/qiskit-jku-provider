@@ -1,9 +1,0 @@
-{
-    "arch": "x86_64",
-    "cpu": "Intel(R) Core(TM) i7-6700HQ CPU @ 2.60GHz",
-    "machine": "hartwig-VirtualBox",
-    "num_cpu": "4",
-    "os": "Linux 4.15.0-20-generic",
-    "ram": "16425464",
-    "version": 1
-}
