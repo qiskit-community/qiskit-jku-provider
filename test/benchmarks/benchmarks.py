@@ -14,6 +14,7 @@ from qiskit import execute
 from qiskit_jku_provider import QasmSimulator
 from qiskit.compiler import transpile, assemble
 
+
 class QasmSimulatorJKUBenchmarkSuite:
     """Runs the Basic qasm_simulator tests from Terra on JKU."""
     params = ["grover_12.qasm", "sym9_193.qasm", "plus63mod4096_163.qasm", "z4_268.qasm",
@@ -28,7 +29,7 @@ class QasmSimulatorJKUBenchmarkSuite:
         circuit.name = filename
         experiments = transpile(circuit, seed_transpiler=34342)
         self.qobj = assemble(experiments, shots=1024)
-        
+
     def time_qasm_simulator_single_shot(self, parameter):
         """Test single shot run."""
         result = execute(self.circuit, self.backend, seed_transpiler=34342, shots=1).result()
