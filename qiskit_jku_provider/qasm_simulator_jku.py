@@ -297,6 +297,7 @@ class QasmSimulator(BaseBackend):
         'n_qubits': 30,
         'conditional': False,
         'max_shots': 100000,
+        'coupling_map': None,
         'open_pulse': False,
         'gates': [
             {
