@@ -1,3 +1,10 @@
+# Qiskit JKU Simulator Provider is superseded by [JKQ DDSIM](https://github.com/iic-jku/ddsim)
+
+The Qiskit JKU Simulator is superseded by [JKQ DDSIM](https://github.com/iic-jku/ddsim), which uses a reworked 
+implementation of the underlying decision diagrams as well as pybind11 (instead of writing OpenQASM code to files).
+Existing code can be adapted with minimal changes (import statements and provider name), new code should use the JKQ DDSIM
+from start. Python wheels are available via PyPI as [jkq.ddsim](https://pypi.org/project/jkq.ddsim/).
+
 # Qiskit JKU Simulator Provider
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)[![Build Status](https://img.shields.io/travis/com/Qiskit/qiskit-jku-provider/master.svg?style=popout-square)](https://travis-ci.com/Qiskit/qiskit-jku-provider)[![](https://img.shields.io/github/release/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://github.com/Qiskit/qiskit-jku-provider/releases)[![](https://img.shields.io/pypi/dm/qiskit-jku-provider.svg?style=popout-square)](https://pypi.org/project/qiskit-jku-provider/)
