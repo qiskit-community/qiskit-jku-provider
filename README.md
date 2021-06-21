@@ -15,7 +15,7 @@ The *Getting Started* example listed below would need the following changes:
 
 # Qiskit JKU Simulator Provider
 
-[![License](https://img.shields.io/github/license/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)[![Build Status](https://img.shields.io/travis/com/Qiskit/qiskit-jku-provider/master.svg?style=popout-square)](https://travis-ci.com/Qiskit/qiskit-jku-provider)[![](https://img.shields.io/github/release/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://github.com/Qiskit/qiskit-jku-provider/releases)[![](https://img.shields.io/pypi/dm/qiskit-jku-provider.svg?style=popout-square)](https://pypi.org/project/qiskit-jku-provider/)
+[![License](https://img.shields.io/github/license/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)[![Build Status](https://img.shields.io/travis/com/Qiskit/qiskit-jku-provider/master.svg?style=popout-square)](https://travis-ci.com/Qiskit/qiskit-jku-provider)[![](https://img.shields.io/github/release/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://github.com/Qiskit/qiskit-jku-provider/releases)[![](https://img.shields.io/pypi/dm/qiskit-jku-provider.svg?style=popout-square)](https://pypi.org/project/qiskit-jku-provider/)[![asv](http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat)](http://your-url-here/)
 
 ## Simulate redundant quantum states efficiently
 
@@ -66,6 +66,35 @@ job = execute(qc, backend=jku_backend)
 result = job.result()
 print(result.get_counts(qc))
 ```
+
+## Installation from SRC
+
+This provider can also be installed from source. The following steps are necessary:
+
+```
+python setup.py build
+
+or 
+
+make dist
+```
+
+## Testing
+
+There are also unit tests implemented that can be executed automatically with:
+
+```
+make test
+```
+
+Furthermore, air speed velocity can be used to benchmark the repository.
+It can be invoked with:
+
+```
+cd test
+asv run
+```
+
 ## Contribution Guidelines
 
 If you'd like to contribute to the JKU simulator, please take a look at our

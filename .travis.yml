@@ -8,7 +8,7 @@ dist: xenial
 language: python
 
 python:
-  - "3.5"
+  - "3.7.4"
 
 addons:
   apt:
@@ -19,6 +19,7 @@ addons:
     - libmpfrc++-dev
 
 install:
+  - pip install --upgrade pip
   - pip install "qiskit>=0.8"
   - pip install -r requirements-dev.txt
 
@@ -27,7 +28,7 @@ matrix:
   - name: style
     script:
     - make style
-  - name: test Python 3.5
+  - name: test Python 3.7
     script:
     - make sim
     - make test

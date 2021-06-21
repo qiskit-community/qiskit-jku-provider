@@ -17,6 +17,7 @@ import random
 import subprocess
 import time
 import uuid
+import tempfile
 
 from qiskit.providers import BaseBackend
 from qiskit.providers.models import BackendConfiguration, BackendStatus
@@ -120,7 +121,7 @@ class JKUSimulatorWrapper:
         qasm_file_lines.append("snapshot({}) {};".format(self.max_snapshot_index, qubits))
 
     # converts the full qobj circuit (except measurements) to a QASM file JKU can handle
-    def convert_qobj_circuit_to_jku_qasm(self, experiment):
+    def convert_qobj_circuit_to_jku_qasm(self, experiment, qelib_inc_name="qelib1.inc"):
         instructions = experiment.instructions
         qubit_num = len(experiment.header.qubit_labels)
         clbit_num = len(experiment.header.clbit_labels)
@@ -128,7 +129,7 @@ class JKUSimulatorWrapper:
         qubit_names = ['q[{}]'.format(i) for i in range(qubit_num)]
         clbit_names = ['c[{}]'.format(i) for i in range(clbit_num)]
         qasm_file_lines = ["OPENQASM 2.0;",
-                           "include \"qelib1.inc\";",
+                           "include \"{}\";".format(qelib_inc_name),
                            "qreg q[{}];".format(qubit_num),
                            "creg c[{}];".format(qubit_num)
                            ]
@@ -150,14 +151,17 @@ class JKUSimulatorWrapper:
         self.set_config(config, experiment.config)
         # do this before running so we can output warning to the user as soon as possible if needed
         measurement_data = self.compute_measurement_data(experiment)
-        with open("qelib1.inc", "w") as qelib_file:
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as qelib_file:
+            qelib_inc_name = qelib_file.name
             qelib_file.write(qelib1)
+
         self.start_time = time.time()
-        qasm = self.convert_qobj_circuit_to_jku_qasm(experiment)
+        qasm = self.convert_qobj_circuit_to_jku_qasm(experiment, qelib_inc_name)
         run_output = self.run(qasm)
         self.end_time = time.time()
-        if os.path.exists("qelib1.inc"):
-            os.remove("qelib1.inc")
+        if os.path.exists(qelib_inc_name):
+            os.unlink(qelib_inc_name)
         output_data = self.parse_output(run_output, measurement_data)
         result_dict = {'header': {'name': experiment.header.name,
                                   'memory_slots': experiment.config.memory_slots,
@@ -265,6 +269,9 @@ DEFAULT_SIMULATOR_PATHS = [
     # This is the path where Makefile creates the simulator by default
     os.path.abspath(os.path.join(os.path.dirname(__file__),
                                  '../build/lib/qiskit_jku_provider/jku_simulator'
+                                 + EXTENSION)),
+    os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                 '../build/jku_simulator'
                                  + EXTENSION)),
     # This is the path where PIP installs the simulator
     os.path.abspath(os.path.join(os.path.dirname(__file__),
