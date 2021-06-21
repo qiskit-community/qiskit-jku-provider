@@ -5,6 +5,14 @@ implementation of the underlying decision diagrams as well as pybind11 (instead 
 Existing code can be adapted with minimal changes (import statements and provider name), new code should use the JKQ DDSIM
 from start. Python wheels are available via PyPI as [jkq.ddsim](https://pypi.org/project/jkq.ddsim/).
 
+The *Getting Started* example listed below would need the following changes:
+
+* `pip install qiskit-jku-provider` → `pip install jkq.ddsim`
+* `from qiskit_jku_provider import JKUProvider` → `from jkq import ddsim`
+* `JKU = JKUProvider()` → `JKU = ddsim.JKQProvider()`
+* Optional, but recommended: Rename variables containing `jku` to contain `jkq` instead.
+
+
 # Qiskit JKU Simulator Provider
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)[![Build Status](https://img.shields.io/travis/com/Qiskit/qiskit-jku-provider/master.svg?style=popout-square)](https://travis-ci.com/Qiskit/qiskit-jku-provider)[![](https://img.shields.io/github/release/Qiskit/qiskit-jku-provider.svg?style=popout-square)](https://github.com/Qiskit/qiskit-jku-provider/releases)[![](https://img.shields.io/pypi/dm/qiskit-jku-provider.svg?style=popout-square)](https://pypi.org/project/qiskit-jku-provider/)
